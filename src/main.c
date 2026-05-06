@@ -70,15 +70,8 @@ unsigned int shaderProgram;
 unsigned int VAO;
 unsigned int VBO;
 
-unsigned int VAO_faces;
-unsigned int VBO_faces;
-unsigned int EBO_faces;
-
-char* opened_file = NULL;
 int last_frame_time = 0;
 int lastTime = 0;
-struct nk_context *ctx;
-
 
 void init(void);
 void reshape(void);
@@ -136,8 +129,6 @@ void draw_object(const Color_RGBA color){
         glm_mat4_identity(proj);
         glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, 100.0f, proj);
 
-        printf("HELLO \n");
-        fflush(stdout);
 
         int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
         int transformLocation   = glGetUniformLocation(shaderProgram, "model");
@@ -151,9 +142,9 @@ void draw_object(const Color_RGBA color){
         glUniformMatrix4fv(projLocation, 1, GL_FALSE, (const float*)proj);
         glUniform1f(sizeMultiplier, 1);
 
-        glBindVertexArray(VAO_faces);
+        glBindVertexArray(VAO);
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO_faces);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 
         //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_faces);
@@ -216,11 +207,6 @@ void init() {
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
 
-        glGenVertexArrays(1, &VAO_faces);
-        glGenBuffers(1, &VBO_faces);
-        glGenBuffers(1, &EBO_faces);
-
-
         glBindVertexArray(VAO);
         /**
           glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -254,15 +240,6 @@ void input(int * quit){
                                         }
                                 }
                                 break;  
-                        case SDL_DROPFILE:
-                                if(opened_file != NULL)
-                                        free(opened_file);
-                                opened_file = (char*)malloc(sizeof(char)*(strlen(e.drop.file)+1));
-                                strcpy(opened_file, e.drop.file);
-                                printf("File dropped: %s\n", opened_file);
-                                update_item = TRUE;
-                                SDL_free(e.drop.file);
-                                break;
                 }
         }
         if(states[SDL_SCANCODE_W]){
@@ -392,6 +369,5 @@ int main(int argc, char** argv) {
         SDL_GL_DeleteContext(glContext);
         SDL_DestroyWindow(glWindow);
         SDL_Quit();
-        free(opened_file);
         return 0;
 }
