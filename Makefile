@@ -7,7 +7,7 @@ build:
 profile:
 	clang -I./include/ -std=c99 -Wall -fsanitize=address ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -pg -o saida.out
 
-run:
+run: build
 	./saida.out
 
 clean:

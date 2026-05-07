@@ -26,11 +26,11 @@
 #include <cglm/cglm.h>
 
 // My defines
-#define SCREEN_WIDTH   600
+#define SCREEN_WIDTH   800
 #define SCREEN_HEIGHT  600
 #define TRUE  1
 #define FALSE 0
-#define TARGET_FPS 90
+#define TARGET_FPS 100
 #define FRAME_TARGET_TIME 1000/TARGET_FPS
 #define FOV 70
 
@@ -101,7 +101,6 @@ float verts[] = {0.5f, 0.5f, 0.0f,
                  1.0f, 0.0f, 0.0f};
 
 void draw_object(const Color_RGBA color){
-        //float* verts = HE_get_object_verts_as_array(current_object);
         int size = 3;
 
         mat4 model;
@@ -144,18 +143,8 @@ void draw_object(const Color_RGBA color){
 
         glBindVertexArray(VAO);
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-
-        //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_faces);
-        //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*size, verts, GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-
         glDrawArrays(GL_TRIANGLES, 0, 3);
         //glDrawElements(GL_TRIANGLES, size , GL_UNSIGNED_INT, 0);
-        //free(verts);
 }
 
 
@@ -208,15 +197,17 @@ void init() {
         glGenBuffers(1, &VBO);
 
         glBindVertexArray(VAO);
-        /**
-          glBindBuffer(GL_ARRAY_BUFFER, VBO);
-          glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-         **/
 
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+        //
+        //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_faces);
+        //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*size, verts, GL_STATIC_DRAW);
+        //
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-
 }
+
 int update_item = FALSE;
 
 void input(int * quit){
