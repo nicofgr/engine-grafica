@@ -34,8 +34,8 @@
 #define FRAME_TARGET_TIME 1000/TARGET_FPS
 #define FOV 70
 
-int rotate = FALSE;
-float rotate_speed = -1.0f/0.9; // frequency
+int rotate = TRUE;
+float rotate_speed = -1.0f/10.0; // frequency
 vec3 translation = {0.0f, 0.0f, 0.0f};
 
 SDL_Window*   glWindow = NULL;
@@ -96,13 +96,8 @@ vec3 camera_up    = {0.0f, 1.0f,  0.0f};
 Color_RGBA red_color = {0.85f, 0.02f, 0.12f, 0.5f};
 Color_RGBA green_color = {0.20f, 1.0f, 0.69f, 0.5f};
 
-float verts[] = {0.5f, 0.5f, 0.0f,
-                 0.0f, 0.0f, 0.0f,
-                 1.0f, 0.0f, 0.0f};
 
 void draw_object(const Color_RGBA color){
-        int size = 3;
-
         mat4 model;
         glm_mat4_identity(model);
         //glm_scale(model, (vec4){0.1f, 0.1f, 0.1f, 1.0f});
@@ -115,7 +110,6 @@ void draw_object(const Color_RGBA color){
         glm_translate(view, translation);
 
         vec3 target_dir;
-
         vec3 direction;
         direction[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
         direction[1] = sin(glm_rad(pitch));
@@ -143,18 +137,55 @@ void draw_object(const Color_RGBA color){
 
         glBindVertexArray(VAO);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_LINE_LOOP, 0, 3);
         //glDrawElements(GL_TRIANGLES, size , GL_UNSIGNED_INT, 0);
 }
 
 
+float verts[] = {0.5f, 0.5f, 0.0f,
+                 0.0f, 0.0f, 0.0f,
+                 1.0f, 0.0f, 0.0f};
+
 void init() {
+        if(SDL_Init(SDL_INIT_EVERYTHING) != 0){
+                printf("SDL2 could not initialize video subsystem\n");
+                exit(1);
+        }
+
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+        glWindow = SDL_CreateWindow("OpenGL 3.3", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+        if(glWindow == NULL){
+                printf("Error creating window\n");
+                exit(1);
+        }
+
+        glContext = SDL_GL_CreateContext(glWindow);
+        if(glContext == NULL){
+                printf("Error creating GL context\n");
+                exit(1);
+        }
+
+        if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
+                puts("glad was not initialized");
+                exit(1);
+        }
+        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glEnable(GL_PROGRAM_POINT_SIZE);
         glEnable(GL_MULTISAMPLE);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
 
         int success;
         char infoLog[512];
@@ -208,7 +239,6 @@ void init() {
         glEnableVertexAttribArray(0);
 }
 
-int update_item = FALSE;
 
 void input(int * quit){
         SDL_Event e;
@@ -266,11 +296,12 @@ void input(int * quit){
                 pitch = 89.9f;
         if(pitch < -89.9f)
                 pitch = -89.9f;
-        if(0){
-        printf("%d, %d\n", x, y);
-        printf("Pos: %.2f, %.2f, %.2f\n", camera_pos[0], camera_pos[1], camera_pos[2]);
-        printf("Fnt: %.2f, %.2f, %.2f\n", camera_front[0], camera_front[1], camera_front[2]);
-        printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
+
+        if(0){  // for debugging
+                printf("%d, %d\n", x, y);
+                printf("Pos: %.2f, %.2f, %.2f\n", camera_pos[0], camera_pos[1], camera_pos[2]);
+                printf("Fnt: %.2f, %.2f, %.2f\n", camera_front[0], camera_front[1], camera_front[2]);
+                printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
         }
 }
 
@@ -296,52 +327,16 @@ typedef struct{
         unsigned int size;
 } String;
 
-int option_selected = 0;
-int step_draw = TRUE;
-int selected_vertex = 0;
-int selected_face = 0;
-int selected_edge = 0;
-
 void draw(const int step){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        draw_object(red_color);
+        draw_object(green_color);
 }
 
 int main(int argc, char** argv) {
-        if(SDL_Init(SDL_INIT_EVERYTHING) != 0){
-                printf("SDL2 could not initialize video subsystem\n");
-                exit(1);
-        }
-
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-        glWindow = SDL_CreateWindow("OpenGL 3.3", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
-        if(glWindow == NULL){
-                printf("Error creating window\n");
-                exit(1);
-        }
-
-        glContext = SDL_GL_CreateContext(glWindow);
-        if(glContext == NULL){
-                printf("Error creating GL context\n");
-                exit(1);
-        }
-
-        if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
-                puts("glad was not initialized");
-                exit(1);
-        }
-        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
 
         int quit = FALSE;
         int counter = 0;
