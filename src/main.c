@@ -38,7 +38,7 @@
 
 typedef uint32_t u32;
 
-int rotate = TRUE;
+int rotate = FALSE;
 float rotate_speed = -1.0f/10.0; // frequency
 vec3 translation = {0.0f, 0.0f, 0.0f};
 
@@ -100,20 +100,32 @@ vec3 camera_front = {0.0f, 0.0f, -1.0f};
 vec3 camera_up    = {0.0f, 1.0f,  0.0f};
 Color_RGBA red_color = {0.85f, 0.02f, 0.12f, 0.5f};
 //Color_RGBA green_color = {0.20f, 1.0f, 0.69f, 0.5f};
-Color_RGBA green_color = {0.20f, 1.0f, 0.69f, 0.2f};
+Color_RGBA green_color = {0.20f, 1.0f, 0.69f, 1.0f};
 
 typedef struct Vec3_Array{
-        vec3* vertices;
+        vec3* array;
         u32   size;
 }Vec3_Array;
 
-void draw_object(const Color_RGBA color, GLenum mode){
+typedef struct u32_Array{
+        u32* array;
+        u32  size;
+}u32_Array;
+
+typedef struct Model{
+        Vec3_Array vertices;
+        u32_Array  faces;
+}Model;
+
+void draw_object(const Color_RGBA color, GLenum mode, GLuint VAO){
         mat4 model;
         glm_mat4_identity(model);
         //glm_scale(model, (vec4){0.1f, 0.1f, 0.1f, 1.0f});
         glm_translate(model, translation);
-        if(rotate == TRUE)
+        if(rotate == TRUE){
                 glm_rotate(model, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
+                glm_rotate(model, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.2f, 0.0f, 0.4f});
+        }
 
         mat4 view;
         glm_mat4_identity(view);
@@ -151,12 +163,9 @@ void draw_object(const Color_RGBA color, GLenum mode){
         //glDrawArrays(GL_LINE_LOOP, 0, 12);
         //glDrawArrays(GL_LINE_STRIP, 0, 12);
         //glDrawArrays(GL_POINTS, 0, 12);
-        glDrawElements(mode, 19*3 , GL_UNSIGNED_INT, 0);
+        glDrawElements(mode, 20*3 , GL_UNSIGNED_INT, 0);
 }
 
-vec3 data[3] = {{0.5f, 0.5f, 0.0f},{0.0f,0.0f,0.0f},{1.0f, 0.0f, 0.0f}};
-Vec3_Array triangle = {.vertices = data,
-                       .size = 3};
 
 vec3 ico[12] = {{0.0f, 1.0f, GOLDEN_RATIO},
                 {0.0f, 1.0f, -GOLDEN_RATIO},
@@ -170,9 +179,9 @@ vec3 ico[12] = {{0.0f, 1.0f, GOLDEN_RATIO},
                 {GOLDEN_RATIO, 0.0f, -1.0f,},
                 {-GOLDEN_RATIO, 0.0f, 1.0f,},
                 {-GOLDEN_RATIO, 0.0f, -1.0f,}};
-Vec3_Array icosahedron = {.vertices = ico, .size = 12};
+Vec3_Array icosahedron = {.array = ico, .size = 12};
 
-u32 ebo[20*3] = {
+u32 ebo[20*3] = { // Faces
                 0, 2, 8,
                 0, 8, 4,
                 0, 4, 6,
@@ -196,6 +205,106 @@ u32 ebo[20*3] = {
                 11,6,1,
                 1,6,4
 };
+u32_Array icofaces = {.array=ebo, .size=20*3};
+
+Model sphere;
+
+void model_free(Model* model){
+        free(model->faces.array);
+        free(model->vertices.array);
+}
+
+int model_pushVert(Model* model, vec3 vertice){
+        if(model->vertices.size == 0){
+                model->vertices.array = (vec3*)malloc(sizeof(vec3));
+        }else{
+                model->vertices.array = (vec3*)realloc(model->vertices.array, sizeof(vec3)*(model->vertices.size+1));
+        }
+        glm_vec3_copy(vertice, model->vertices.array[model->vertices.size]);
+        model->vertices.size++;
+        return model->vertices.size-1;
+}
+
+void model_pushVerts(Model* model, const Vec3_Array vertices){
+        if(model->vertices.size == 0){
+                model->vertices.array = (vec3*)malloc(sizeof(vec3)*vertices.size);
+        }else{
+                model->vertices.array = (vec3*)realloc(model->vertices.array, sizeof(vec3)*(model->vertices.size+vertices.size));
+        }
+        for(int i = 0; i < vertices.size; i++){
+                glm_vec3_copy(vertices.array[i], model->vertices.array[model->vertices.size]);
+                model->vertices.size++;
+        }
+}
+void model_pushFaces(Model* model, const u32_Array faces){
+        if(model->faces.size == 0){
+                model->faces.array = (u32*)malloc(sizeof(u32)*faces.size);
+        }else{
+                model->faces.array = (u32*)realloc(model->faces.array, sizeof(u32)*(model->faces.size+faces.size));
+        }
+        for(int i = 0; i < faces.size; i++){
+                model->faces.array[model->faces.size] = faces.array[i];
+                model->faces.size++;
+        }
+}
+void model_removeFace(Model* model, u32 face){  // Copiar a ultima pra face removida e realloc
+        u32 x1 = model->faces.array[face*3];
+        u32 x2 = model->faces.array[face*3+1];
+        u32 x3 = model->faces.array[face*3+2];
+        printf("Removing face %d: %d %d %d\n", face, x1, x2, x3);
+        memcpy(&model->faces.array[face*3], &model->faces.array[model->faces.size-3], sizeof(u32)*3);
+        u32* temp = (u32*)realloc(model->faces.array, sizeof(u32)*(model->faces.size-3));
+        if(temp == NULL)
+                exit(0);
+        model->faces.array = temp;
+        model->faces.size -= 3;
+}
+
+void model_subdivideFace(Model* model, u32 face){
+        u32 x1 = model->faces.array[face*3];
+        u32 x2 = model->faces.array[face*3+1];
+        u32 x3 = model->faces.array[face*3+2];
+        model_removeFace(model, face);
+        
+        vec3 v4;
+        vec3 v5;
+        vec3 v6;
+        glm_vec3_add(model->vertices.array[x1], model->vertices.array[x2], v4);
+        glm_vec3_scale(v4, 0.5f, v4);
+        glm_vec3_add(model->vertices.array[x2], model->vertices.array[x3], v5);
+        glm_vec3_scale(v5, 0.5f, v5);
+        glm_vec3_add(model->vertices.array[x3], model->vertices.array[x1], v6);
+        glm_vec3_scale(v6, 0.5f, v6);
+
+        u32 x4 = model_pushVert(model, v4);
+        u32 x5 = model_pushVert(model, v5);
+        u32 x6 = model_pushVert(model, v6);
+        u32 temp[3] = {x4, x5, x6};
+        u32_Array new_faces = {.array=temp, .size = 3};
+        model_pushFaces(model, new_faces);
+}
+
+void model_printData(const Model model){
+        puts("VERTICES:");
+        for(int i = 0; i < model.vertices.size; i++){
+                float x = model.vertices.array[i][0];
+                float y = model.vertices.array[i][1];
+                float z = model.vertices.array[i][2];
+                printf("%.2f %.2f %.2f\n", x, y, z);
+        }
+        puts("FACES:");
+        for(int i = 0; i < model.faces.size; i++){
+                printf("%d ", model.faces.array[i]);
+                if((i+1)%3 == 0)
+                        puts("");
+        }
+        fflush(stdout);
+}
+
+void create_sphere(){
+        model_pushVerts(&sphere, icosahedron);
+        model_pushFaces(&sphere, icofaces);
+}
 
 
 void init() {
@@ -282,13 +391,17 @@ void init() {
 
         glBindVertexArray(VAO);
 
-        Vec3_Array model = icosahedron;
+        create_sphere();
+        Model* model = &sphere;
+        model_printData(*model);
+        model_subdivideFace(model, 4);
+        model_printData(*model);
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*model.size, model.vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*model->vertices.size, model->vertices.array, GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ebo), ebo, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32)*model->faces.size, model->faces.array, GL_STATIC_DRAW);
         
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
@@ -384,16 +497,10 @@ typedef struct{
 
 void draw(const int step){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_CULL_FACE);
         // NOT TRANSPARENT FIRST
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
-
-        glEnable(GL_POLYGON_OFFSET_LINE);
-        glPolygonOffset(-1.0, -1.0); // Nudge closer to camera
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        draw_object(red_color, GL_TRIANGLES);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glDisable(GL_POLYGON_OFFSET_LINE);
 
         // TRANSPARENT OBJECTS
         glEnable(GL_BLEND);
@@ -402,10 +509,19 @@ void draw(const int step){
         glEnable(GL_CULL_FACE);
 
         glCullFace(GL_FRONT);
-        draw_object(green_color, GL_TRIANGLES);
+        //draw_object(green_color, GL_TRIANGLES);
         glCullFace(GL_BACK);
-        draw_object(green_color, GL_TRIANGLES);
+        //draw_object(green_color, GL_TRIANGLES);
+        //glDisable(GL_CULL_FACE);
 
+        // WIREFRAMES
+        //glDisable(GL_DEPTH_TEST);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glCullFace(GL_BACK);
+        draw_object(green_color, GL_TRIANGLES, VAO);
+        glCullFace(GL_FRONT);
+        draw_object(red_color, GL_TRIANGLES, VAO);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 int main(int argc, char** argv) {
