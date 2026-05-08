@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <unistd.h> // for wait time
 #include <cglm/cglm.h>
+#include <stdint.h>
 
 // My defines
 #define SCREEN_WIDTH   800
@@ -33,6 +34,9 @@
 #define TARGET_FPS 100
 #define FRAME_TARGET_TIME 1000/TARGET_FPS
 #define FOV 70
+#define GOLDEN_RATIO 1.61803398875
+
+typedef uint32_t u32;
 
 int rotate = TRUE;
 float rotate_speed = -1.0f/10.0; // frequency
@@ -67,8 +71,9 @@ const char *fragmentShaderSource = "#version 330 core\n"
 unsigned int vertexShader;
 unsigned int fragmentShader;
 unsigned int shaderProgram;
-unsigned int VAO;
-unsigned int VBO;
+GLuint VAO;
+GLuint VBO;
+GLuint EBO;
 
 int last_frame_time = 0;
 int lastTime = 0;
@@ -94,10 +99,15 @@ vec3 camera_pos   = {0.0f, 0.0f,  7.0f};
 vec3 camera_front = {0.0f, 0.0f, -1.0f};
 vec3 camera_up    = {0.0f, 1.0f,  0.0f};
 Color_RGBA red_color = {0.85f, 0.02f, 0.12f, 0.5f};
-Color_RGBA green_color = {0.20f, 1.0f, 0.69f, 0.5f};
+//Color_RGBA green_color = {0.20f, 1.0f, 0.69f, 0.5f};
+Color_RGBA green_color = {0.20f, 1.0f, 0.69f, 0.2f};
 
+typedef struct Vec3_Array{
+        vec3* vertices;
+        u32   size;
+}Vec3_Array;
 
-void draw_object(const Color_RGBA color){
+void draw_object(const Color_RGBA color, GLenum mode){
         mat4 model;
         glm_mat4_identity(model);
         //glm_scale(model, (vec4){0.1f, 0.1f, 0.1f, 1.0f});
@@ -137,15 +147,56 @@ void draw_object(const Color_RGBA color){
 
         glBindVertexArray(VAO);
 
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawArrays(GL_LINE_LOOP, 0, 3);
-        //glDrawElements(GL_TRIANGLES, size , GL_UNSIGNED_INT, 0);
+        //glDrawArrays(GL_TRIANGLES, 0, 12);
+        //glDrawArrays(GL_LINE_LOOP, 0, 12);
+        //glDrawArrays(GL_LINE_STRIP, 0, 12);
+        //glDrawArrays(GL_POINTS, 0, 12);
+        glDrawElements(mode, 19*3 , GL_UNSIGNED_INT, 0);
 }
 
+vec3 data[3] = {{0.5f, 0.5f, 0.0f},{0.0f,0.0f,0.0f},{1.0f, 0.0f, 0.0f}};
+Vec3_Array triangle = {.vertices = data,
+                       .size = 3};
 
-float verts[] = {0.5f, 0.5f, 0.0f,
-                 0.0f, 0.0f, 0.0f,
-                 1.0f, 0.0f, 0.0f};
+vec3 ico[12] = {{0.0f, 1.0f, GOLDEN_RATIO},
+                {0.0f, 1.0f, -GOLDEN_RATIO},
+                {0.0f, -1.0f, GOLDEN_RATIO},
+                {0.0f, -1.0f, -GOLDEN_RATIO},
+                {1.0f, GOLDEN_RATIO, 0.0f},
+                {1.0f, -GOLDEN_RATIO, 0.0f},
+                {-1.0f, GOLDEN_RATIO, 0.0f},
+                {-1.0f, -GOLDEN_RATIO, 0.0f},
+                {GOLDEN_RATIO, 0.0f, 1.0f,},
+                {GOLDEN_RATIO, 0.0f, -1.0f,},
+                {-GOLDEN_RATIO, 0.0f, 1.0f,},
+                {-GOLDEN_RATIO, 0.0f, -1.0f,}};
+Vec3_Array icosahedron = {.vertices = ico, .size = 12};
+
+u32 ebo[20*3] = {
+                0, 2, 8,
+                0, 8, 4,
+                0, 4, 6,
+                0, 6, 10,
+                0, 10, 2,
+
+                3, 1, 9,
+                3, 9, 5,
+                3, 5, 7,
+                3, 7, 11,
+                3, 11, 1,
+
+                1,4,9,
+                9,4,8,
+                9,8,5,
+                5,8,2,
+                5,2,7,
+                7,2,10,
+                7,10,11,
+                11,10,6,
+                11,6,1,
+                1,6,4
+};
+
 
 void init() {
         if(SDL_Init(SDL_INIT_EVERYTHING) != 0){
@@ -186,7 +237,7 @@ void init() {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
-
+        // SHADERS =============================================================
         int success;
         char infoLog[512];
         vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -224,17 +275,21 @@ void init() {
         glDeleteShader(fragmentShader);
 
 
+        // VAO / VBO / EBO ===========================================================
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
 
         glBindVertexArray(VAO);
 
+        Vec3_Array model = icosahedron;
+
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-        //
-        //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_faces);
-        //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*size, verts, GL_STATIC_DRAW);
-        //
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*model.size, model.vertices, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ebo), ebo, GL_STATIC_DRAW);
+        
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
 }
@@ -329,11 +384,28 @@ typedef struct{
 
 void draw(const int step){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // NOT TRANSPARENT FIRST
         glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+
+        glEnable(GL_POLYGON_OFFSET_LINE);
+        glPolygonOffset(-1.0, -1.0); // Nudge closer to camera
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        draw_object(red_color, GL_TRIANGLES);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDisable(GL_POLYGON_OFFSET_LINE);
+
+        // TRANSPARENT OBJECTS
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        draw_object(green_color);
+        glEnable(GL_CULL_FACE);
+
+        glCullFace(GL_FRONT);
+        draw_object(green_color, GL_TRIANGLES);
+        glCullFace(GL_BACK);
+        draw_object(green_color, GL_TRIANGLES);
+
 }
 
 int main(int argc, char** argv) {
