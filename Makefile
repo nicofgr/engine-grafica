@@ -4,11 +4,20 @@ build:
 	clang -I./include/ -std=c99 -Wall -fsanitize=address ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -o  saida.out
 	#Turn -fsanitize off for release build
 
-profile:
-	clang -I./include/ -std=c99 -Wall -fsanitize=address ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -pg -o saida.out
+perf:
+	clang -I./include/ -std=c99 -Wall ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -p -fno-omit-frame-pointer -o saida.out
+	perf record -g ./saida.out
+	perf report --dsos=saida.out
+
+gprof:
+	clang -I./include/ -std=c99 -Wall ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -pg -o gprof.out
+	./gprof.out
+	gprof ./gprof.out gmon.out > analysis.txt
+	rm ./gprof.out
+	rm gmon.out
 
 run: build
 	./saida.out
 
 clean:
-	rm ./saida.out
+	rm *.out
