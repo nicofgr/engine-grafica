@@ -25,6 +25,7 @@
 #include <cglm/cglm.h>
 **/
 #include "engine.h"
+#include "constants.h"
 
 void swapFloat(float* x1 , float* x2){
         float aux = *x1;
