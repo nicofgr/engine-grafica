@@ -28,5 +28,12 @@ typedef struct{
         unsigned int size;
 } String;
 
+typedef struct{
+        Color_RGBA red;
+        Color_RGBA green;
+        Color_RGBA orange;
+        Color_RGBA star;
+} ColorPallete;
+
 
 #endif

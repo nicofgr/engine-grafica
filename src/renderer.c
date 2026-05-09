@@ -3,6 +3,9 @@
 #include "model.h"
 #include "constants.h"
 
+#include <cglm/cglm.h>
+#include <glad/glad.h>
+
 const char *vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
 "uniform mat4 model;\n"
@@ -26,6 +29,10 @@ const char *fragmentShaderSource = "#version 330 core\n"
 GLuint vertexShader;
 GLuint fragmentShader;
 GLuint shaderProgram;
+
+GLuint VAO;
+GLuint VBO;
+GLuint EBO;
 
 vec3 camera_pos   = {0.0f, 0.0f,  7.0f};
 vec3 camera_front = {0.0f, 0.0f, -1.0f};
@@ -76,7 +83,43 @@ void compileShaders(){
 
 }
 void renderer_init(){
+        if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
+                puts("glad was not initialized");
+                exit(1);
+        }
+        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glEnable(GL_PROGRAM_POINT_SIZE);
+        glEnable(GL_MULTISAMPLE);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         compileShaders();
+}
+
+void renderer_draw(Model* model){
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_CULL_FACE);
+        // NOT TRANSPARENT FIRST
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+
+        // TRANSPARENT OBJECTS
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        draw_object(color.star, *model);
+
+        // WIREFRAMES
+        glEnable(GL_POLYGON_OFFSET_LINE);
+        glPolygonOffset(-1.0, -1.0);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        draw_object(color.orange, *model);
+
+        glDisable(GL_POLYGON_OFFSET_LINE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void camera_move(vec3 direction){
@@ -110,7 +153,7 @@ void camera_rotate(float x, float y){
 vec3 translation = {0.0f, 0.0f, 0.0f};
 
 
-void draw_object(const Color_RGBA color, GLenum mode, GLuint VAO, Model modelo){
+void draw_object(const Color_RGBA color, Model modelo){
         mat4 model;
         glm_mat4_identity(model);
         //glm_scale(model, (vec4){0.1f, 0.1f, 0.1f});
@@ -153,5 +196,32 @@ void draw_object(const Color_RGBA color, GLenum mode, GLuint VAO, Model modelo){
 
         glBindVertexArray(VAO);
 
-        glDrawElements(mode, modelo.faces.size, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, modelo.faces.size, GL_UNSIGNED_INT, 0);
+}
+
+void object_create(Model* model){
+
+        // VAO / VBO / EBO ===========================================================
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        model_create_sphere(model);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*model->vertices.size, model->vertices.array, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32)*model->faces.size, model->faces.array, GL_STATIC_DRAW);
+        
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+}
+
+void camera_print_coords(){
+        printf("Pos: %.2f, %.2f, %.2f\n", camera_pos[0], camera_pos[1], camera_pos[2]);
+        printf("Fnt: %.2f, %.2f, %.2f\n", camera_front[0], camera_front[1], camera_front[2]);
+        printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
