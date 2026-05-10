@@ -2,12 +2,14 @@
 #include "constants.h"
 
 u32 sphere;
+u32 sphere2;
 
 void init(){
-        vec3 position = {0.0f, 0.0f, 0.0f};
+        vec3 position = {2.0f, 0.0f, 0.0f};
         float radius = 1.0f;
 
         sphere = create_sphere(position, radius, color.star);
+        sphere2 = create_sphere((vec3){2.0f, 0.0f, 0.0f}, 0.5f, color.red);
 }
 
 void update(){
@@ -15,6 +17,7 @@ void update(){
 
 void draw(){
         draw_entity(sphere);
+        draw_entity(sphere2);
 }
 
 Engine engine = {

@@ -38,9 +38,6 @@ vec3 camera_up    = {0.0f, 1.0f,  0.0f};
 float yaw = -90.0f;
 float pitch = 0.0f;
 
-int rotate = TRUE;
-float rotate_speed = -1.0f/10.0; // frequency
-                                 //
 typedef struct Object{
         GLuint VAO;
         u32 nFaces;
@@ -101,8 +98,15 @@ void compileShaders(){
         }
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
-
 }
+
+
+int vertexColorLocation;
+int transformLocation;
+int viewLocation; 
+int projLocation;   
+int sizeMultiplier;
+
 void renderer_init(){
         if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
                 puts("glad was not initialized");
@@ -118,10 +122,15 @@ void renderer_init(){
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         compileShaders();
+        glUseProgram(shaderProgram);
+        vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        transformLocation   = glGetUniformLocation(shaderProgram, "model");
+        viewLocation        = glGetUniformLocation(shaderProgram, "view");
+        projLocation        = glGetUniformLocation(shaderProgram, "projection");
+        sizeMultiplier      = glGetUniformLocation(shaderProgram, "sizeMultiplier");
 
         objectArray.array = NULL;
         objectArray.size  = 0;
-        //renderer_create_sphere();
 }
 
 void renderer_quit(){
@@ -138,8 +147,6 @@ void renderer_draw(){
         // TRANSPARENT OBJECTS
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        //draw_object(color.star, *model);
 
         /**
         // WIREFRAMES
@@ -194,16 +201,13 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
 
         mat4 model;
         glm_mat4_identity(model);
+        glm_translate(model, position);
+        float rotate_speed = -1.0f/10.0; // frequency
+        glm_rotate(model, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
         glm_scale(model, scale);
-        glm_translate(model, translation);
-        if(rotate == TRUE){
-                glm_rotate(model, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
-                //glm_rotate(model, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.2f, 0.0f, 0.4f});
-        }
 
         mat4 view;
         glm_mat4_identity(view);
-        glm_translate(view, translation);
 
         vec3 target_dir;
         vec3 direction;
@@ -219,24 +223,18 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
         glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, 100.0f, proj);
 
 
-        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        int transformLocation   = glGetUniformLocation(shaderProgram, "model");
-        int viewLocation        = glGetUniformLocation(shaderProgram, "view");
-        int projLocation        = glGetUniformLocation(shaderProgram, "projection");
-        int sizeMultiplier      = glGetUniformLocation(shaderProgram, "sizeMultiplier");
-        glUseProgram(shaderProgram);
+        // MOVE GET UNIFORM LOCATION TO INIT
+        //glUseProgram(shaderProgram);
         glUniform4f(vertexColorLocation, color.R, color.G, color.B, color.A);
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, (const float*)model);
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (const float*)view);
         glUniformMatrix4fv(projLocation, 1, GL_FALSE, (const float*)proj);
         glUniform1f(sizeMultiplier, 1);
-        // REMOVE TOP STUFF FROM THIS FUNC
 
         glBindVertexArray(object.VAO);
 
         glDrawElements(GL_TRIANGLES, object.nFaces, GL_UNSIGNED_INT, 0);
 }
-
 
 
 GLuint renderer_create_VAO(const Model model){ // Create object from model
@@ -281,4 +279,3 @@ void camera_print_coords(){
         printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
 
-// Renderer tem uma lista de objetos, engine tem uma lista de entities;
