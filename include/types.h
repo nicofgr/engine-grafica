@@ -35,5 +35,5 @@ typedef struct{
         Color_RGBA star;
 } ColorPallete;
 
-
+void Vec3Array_Push(Vec3_Array*, vec3);
 #endif
