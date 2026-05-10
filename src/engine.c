@@ -10,7 +10,41 @@ SDL_GLContext glContext = NULL;
 
 int last_frame_time = 0;
 int lastTime = 0;
-Model model;
+
+typedef struct Entity{
+        u32  modelID;
+        vec3 position;
+        vec3 scale;
+}Entity;
+
+typedef struct EntityArray{
+        Entity* array;
+        u32 size;
+}EntityArray;
+
+EntityArray entityArray;
+
+u32 EntityArray_Push(const u32 modelID, const vec3 position, const vec3 scale){
+        if(entityArray.size == 0){
+                entityArray.array = (Entity*) malloc(sizeof(Entity));
+        }else{
+                entityArray.array = (Entity*) realloc(entityArray.array, sizeof(Entity)*(entityArray.size+1));
+        }
+        u32 index = entityArray.size;
+        entityArray.array[index].modelID = 0;
+        glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, entityArray.array[index].position);
+        glm_vec3_copy((vec3){1.0f, 1.0f, 1.0f}, entityArray.array[index].scale);
+        entityArray.size++;
+        return index;
+}
+
+Entity EntityArray_Get(const u32 entityID){
+        if(entityID >= entityArray.size){
+                fprintf(stderr, "[ERROR] entityID: %d out of bounds", entityID);
+                exit(0);
+        }
+        return entityArray.array[entityID];
+}
 
 void video_init(){
         if(SDL_Init(SDL_INIT_EVERYTHING) != 0){
@@ -40,11 +74,23 @@ void video_init(){
 
 }
 
-void init() {
+u32 create_sphere(vec3 position,  float radius, Color_RGBA color){
+
+        u32 modelID = renderer_create_sphere();
+        u32 entityID = EntityArray_Push(modelID, position, (vec3){1.0f,1.0f,1.0f});
+
+        return entityID;
+}
+
+void draw_entity(u32 entityID){
+        Entity entity = EntityArray_Get(entityID);
+        renderer_draw_object(color.star, entity.modelID, entity.position, entity.scale);
+}
+
+void engine_init(Engine engine) {
         video_init();
         renderer_init();
-
-        object_create(&model);
+        engine.init();
 }
 
 
@@ -106,7 +152,9 @@ void input(int * quit){
         }**/
 }
 
-void update(int* step){
+float delta_time = 0;
+
+void engine_update(Engine engine){
 
         int wait_time = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time);
         if(wait_time > 0 && wait_time <= FRAME_TARGET_TIME)
@@ -115,6 +163,7 @@ void update(int* step){
         float delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
         last_frame_time = SDL_GetTicks();
 
+        engine.update();
         /**
         *step = 0;
         float currentTime = SDL_GetTicks();
@@ -126,8 +175,9 @@ void update(int* step){
 }
 
 
-void draw(const int step){
-        renderer_draw(&model);
+void engine_draw(Engine engine){
+        renderer_draw();
+        engine.draw();
         SDL_GL_SwapWindow(glWindow);
 }
 
@@ -135,4 +185,22 @@ void engine_quit(){
         SDL_GL_DeleteContext(glContext);
         SDL_DestroyWindow(glWindow);
         SDL_Quit();
+        free(entityArray.array);
+        renderer_quit();
 }
+
+void engine_run(Engine engine){
+        int quit = FALSE;
+        int counter = 0;
+
+        engine_init(engine);
+
+        while(quit == FALSE){
+                input(&quit);
+                engine_update(engine);
+                engine_draw(engine);
+                //quit = TRUE;
+        }
+        engine_quit();
+}
+

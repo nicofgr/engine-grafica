@@ -8,5 +8,6 @@ typedef struct Model{
 }Model;
 
 void model_create_sphere(Model* model);
+void model_free(Model* model);
 
 #endif

@@ -30,9 +30,6 @@ GLuint vertexShader;
 GLuint fragmentShader;
 GLuint shaderProgram;
 
-GLuint VAO;
-GLuint VBO;
-GLuint EBO;
 
 vec3 camera_pos   = {0.0f, 0.0f,  7.0f};
 vec3 camera_front = {0.0f, 0.0f, -1.0f};
@@ -44,6 +41,30 @@ float pitch = 0.0f;
 int rotate = TRUE;
 float rotate_speed = -1.0f/10.0; // frequency
                                  //
+typedef struct Object{
+        GLuint VAO;
+        u32 nFaces;
+}Object;
+
+typedef struct ObjectArray{
+        Object* array;
+        u32 size;
+}ObjectArray;
+
+ObjectArray objectArray;
+
+u32 objectArray_push(GLuint VAO, u32 nFaces){
+        if(objectArray.size == 0){
+                objectArray.array = (Object*) malloc(sizeof(Object));
+        }else{
+                objectArray.array = (Object*) realloc(objectArray.array, sizeof(Object)*(objectArray.size+1));
+        }
+        u32 index = objectArray.size;
+        objectArray.array[index].VAO = VAO;
+        objectArray.array[index].nFaces = nFaces;
+        objectArray.size++;
+        return index;
+}
 void compileShaders(){
         int success;
         char infoLog[512];
@@ -97,9 +118,17 @@ void renderer_init(){
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         compileShaders();
+
+        objectArray.array = NULL;
+        objectArray.size  = 0;
+        //renderer_create_sphere();
 }
 
-void renderer_draw(Model* model){
+void renderer_quit(){
+        free(objectArray.array);
+}
+
+void renderer_draw(){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDisable(GL_CULL_FACE);
         // NOT TRANSPARENT FIRST
@@ -110,16 +139,18 @@ void renderer_draw(Model* model){
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        draw_object(color.star, *model);
+        //draw_object(color.star, *model);
 
+        /**
         // WIREFRAMES
         glEnable(GL_POLYGON_OFFSET_LINE);
         glPolygonOffset(-1.0, -1.0);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        draw_object(color.orange, *model);
+        //draw_object(color.orange, *model);
 
         glDisable(GL_POLYGON_OFFSET_LINE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        **/
 }
 
 void camera_move(vec3 direction){
@@ -151,13 +182,19 @@ void camera_rotate(float x, float y){
 }
 
 vec3 translation = {0.0f, 0.0f, 0.0f};
+vec3 scale = {1.0f, 1.0f, 1.0f};
 
 
-void draw_object(const Color_RGBA color, Model modelo){
+Object objectArray_Get(u32 ID){
+        return objectArray.array[ID];
+}
+
+void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 scale){
+        Object object = objectArray_Get(ID);
+
         mat4 model;
         glm_mat4_identity(model);
-        //glm_scale(model, (vec4){0.1f, 0.1f, 0.1f});
-        glm_scale(model, (vec3){2.0f, 2.0f, 2.0f});
+        glm_scale(model, scale);
         glm_translate(model, translation);
         if(rotate == TRUE){
                 glm_rotate(model, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
@@ -193,14 +230,19 @@ void draw_object(const Color_RGBA color, Model modelo){
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (const float*)view);
         glUniformMatrix4fv(projLocation, 1, GL_FALSE, (const float*)proj);
         glUniform1f(sizeMultiplier, 1);
+        // REMOVE TOP STUFF FROM THIS FUNC
 
-        glBindVertexArray(VAO);
+        glBindVertexArray(object.VAO);
 
-        glDrawElements(GL_TRIANGLES, modelo.faces.size, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, object.nFaces, GL_UNSIGNED_INT, 0);
 }
 
-void object_create(Model* model){
 
+
+GLuint renderer_create_VAO(const Model model){ // Create object from model
+        GLuint VAO;
+        GLuint VBO;
+        GLuint EBO;
         // VAO / VBO / EBO ===========================================================
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
@@ -208,20 +250,35 @@ void object_create(Model* model){
 
         glBindVertexArray(VAO);
 
-        model_create_sphere(model);
-
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*model->vertices.size, model->vertices.array, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*model.vertices.size, model.vertices.array, GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32)*model->faces.size, model->faces.array, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32)*model.faces.size, model.faces.array, GL_STATIC_DRAW);
         
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
+        return VAO;
 }
+
+u32 renderer_create_sphere(){
+        Model sphere = {.faces = 0, .vertices = NULL};
+
+        model_create_sphere(&sphere);
+
+        GLuint VAO = renderer_create_VAO(sphere);
+
+        u32 ID = objectArray_push(VAO, sphere.faces.size);
+
+        model_free(&sphere); 
+        return ID;
+}
+
 
 void camera_print_coords(){
         printf("Pos: %.2f, %.2f, %.2f\n", camera_pos[0], camera_pos[1], camera_pos[2]);
         printf("Fnt: %.2f, %.2f, %.2f\n", camera_front[0], camera_front[1], camera_front[2]);
         printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
+
+// Renderer tem uma lista de objetos, engine tem uma lista de entities;
