@@ -13,6 +13,8 @@ void init(){
 }
 
 void update(){
+        //move_entity(sphere2, (vec3){0.0f, sin(last_frame_time), 0.0f});
+        position_update(sphere2, (vec3){10.0f, 2*sin(last_frame_time/1000.0), 0.0f});
 }
 
 void draw(){

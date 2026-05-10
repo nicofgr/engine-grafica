@@ -189,7 +189,7 @@ void model_create_icosahedron(Model* model){
                 glm_vec3_normalize(model->vertices.array[i]);
         }
         model_pushNormals(model, model->vertices);
-        model_printData(*model);
+        //model_printData(*model);
 }
 
 void model_subdivide(Model* model){

@@ -2,7 +2,6 @@
 #define ENGINE_H
 
 #include <stdint.h>
-#include "cglm/cglm.h"
 #include "types.h"
 
 typedef struct Engine{
@@ -15,8 +14,11 @@ void engine_run(Engine);
 void engine_quit();
 u32 create_sphere(vec3 position,  float radius, Color_RGBA color);
 void draw_entity(u32 object);
+void move_entity(u32 entityID, vec3 position);
+void position_update(u32 entityID, vec3 newPos);
 
 extern float delta_time;
+extern int last_frame_time;
 
 #endif
 

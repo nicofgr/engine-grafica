@@ -70,7 +70,9 @@ void compileShaders(){
 
 
 int vertexColorLocation;
+int viewPos;
 int vertexLightLocation;
+int lightPosLocation;
 int transformLocation;
 int viewLocation; 
 int projLocation;   
@@ -92,15 +94,21 @@ void renderer_init(){
 
         compileShaders();
         glUseProgram(shaderProgram);
-        vertexColorLocation = glGetUniformLocation(shaderProgram, "objectColor");
         vertexLightLocation = glGetUniformLocation(shaderProgram, "lightColor");
+        lightPosLocation    = glGetUniformLocation(shaderProgram, "lightPos");
+        vertexColorLocation = glGetUniformLocation(shaderProgram, "objectColor");
         transformLocation   = glGetUniformLocation(shaderProgram, "model");
         viewLocation        = glGetUniformLocation(shaderProgram, "view");
         projLocation        = glGetUniformLocation(shaderProgram, "projection");
         sizeMultiplier      = glGetUniformLocation(shaderProgram, "sizeMultiplier");
+        viewPos             = glGetUniformLocation(shaderProgram, "viewPos");
+
+        glUniform3f(vertexLightLocation, color.star.R, color.star.G, color.star.B); // Light color
+        glUniform3f(lightPosLocation, 2.0f, 0.0f, 0.0f);
 
         objectArray.array = NULL;
         objectArray.size  = 0;
+
 }
 
 void renderer_quit(){
@@ -196,7 +204,7 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
         // MOVE GET UNIFORM LOCATION TO INIT
         //glUseProgram(shaderProgram);
         glUniform3f(vertexColorLocation, color.R, color.G, color.B);
-        glUniform3f(vertexLightLocation, 1.0f, 1.0f, 1.0f);
+        glUniform3f(viewPos, camera_pos[0], camera_pos[1], camera_pos[2]);
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, (const float*)model);
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (const float*)view);
         glUniformMatrix4fv(projLocation, 1, GL_FALSE, (const float*)proj);
@@ -233,6 +241,8 @@ GLuint renderer_create_VAO(const Model model){ // Create object from model
         
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
         return VAO;
 }
 

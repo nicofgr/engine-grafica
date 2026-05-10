@@ -90,6 +90,14 @@ void draw_entity(u32 entityID){
         renderer_draw_object(entity.color, entity.modelID, entity.position, entity.scale);
 }
 
+void move_entity(u32 entityID, vec3 displacement){
+        glm_vec3_add(displacement, entityArray.array[entityID].position, entityArray.array[entityID].position);
+}
+
+void position_update(u32 entityID, vec3 newPos){
+        glm_vec3_copy(newPos, entityArray.array[entityID].position);
+}
+
 void engine_init(Engine engine) {
         video_init();
         renderer_init();
@@ -156,14 +164,13 @@ void input(int * quit){
 }
 
 float delta_time = 0;
-
 void engine_update(Engine engine){
 
         int wait_time = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time);
         if(wait_time > 0 && wait_time <= FRAME_TARGET_TIME)
                 SDL_Delay(wait_time);
 
-        float delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
+        delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
         last_frame_time = SDL_GetTicks();
 
         engine.update();
