@@ -2,6 +2,7 @@
 #include "types.h"
 #include "model.h"
 #include "constants.h"
+#include "shader.h"
 
 #include <cglm/cglm.h>
 #include <glad/glad.h>
@@ -20,10 +21,11 @@ const char *vertexShaderSource = "#version 330 core\n"
 
 const char *fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"uniform vec4 ourColor;\n"
+"uniform vec3 objectColor;\n"
+"uniform vec3 lightColor;\n"
 "void main()\n"
 "{\n"
-"   FragColor = ourColor;\n"
+"   FragColor = vec4(lightColor * objectColor, 1.0);\n"
 "}\0";
 
 GLuint vertexShader;
@@ -63,45 +65,12 @@ u32 objectArray_push(GLuint VAO, u32 nFaces){
         return index;
 }
 void compileShaders(){
-        int success;
-        char infoLog[512];
-        vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-        glCompileShader(vertexShader);
-        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-        if(!success){
-                glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-                printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n %s\n", infoLog);
-                printf("%d\n", glGetError());
-                exit(1);
-        }
-
-        fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-        glCompileShader(fragmentShader);
-        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-        if(!success){
-                glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-                printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n %s\n", infoLog);
-                exit(1);
-        }
-
-        shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, vertexShader);
-        glAttachShader(shaderProgram, fragmentShader);
-        glLinkProgram(shaderProgram);
-        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-        if(!success) {
-                glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-                printf("ERROR::SHADER::PROGRAM::COMPILATION_FAILED\n %s\n", infoLog);
-                exit(1);
-        }
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
+        shaderProgram = shCreateShaderProgram("shaders/simple_shader.vert", "shaders/simple_shader.frag");
 }
 
 
 int vertexColorLocation;
+int vertexLightLocation;
 int transformLocation;
 int viewLocation; 
 int projLocation;   
@@ -123,7 +92,8 @@ void renderer_init(){
 
         compileShaders();
         glUseProgram(shaderProgram);
-        vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        vertexColorLocation = glGetUniformLocation(shaderProgram, "objectColor");
+        vertexLightLocation = glGetUniformLocation(shaderProgram, "lightColor");
         transformLocation   = glGetUniformLocation(shaderProgram, "model");
         viewLocation        = glGetUniformLocation(shaderProgram, "view");
         projLocation        = glGetUniformLocation(shaderProgram, "projection");
@@ -225,7 +195,8 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
 
         // MOVE GET UNIFORM LOCATION TO INIT
         //glUseProgram(shaderProgram);
-        glUniform4f(vertexColorLocation, color.R, color.G, color.B, color.A);
+        glUniform3f(vertexColorLocation, color.R, color.G, color.B);
+        glUniform3f(vertexLightLocation, 1.0f, 1.0f, 1.0f);
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, (const float*)model);
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (const float*)view);
         glUniformMatrix4fv(projLocation, 1, GL_FALSE, (const float*)proj);
