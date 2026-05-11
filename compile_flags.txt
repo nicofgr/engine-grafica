@@ -1,2 +1,4 @@
 -I./include/
 -I./include/glad/
+-I/usr/include/freetype2
+-I/usr/include/libpng16

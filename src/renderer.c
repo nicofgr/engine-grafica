@@ -1,37 +1,16 @@
 #include "renderer.h"
+#include "cglm/cam.h"
 #include "types.h"
 #include "model.h"
 #include "constants.h"
 #include "shader.h"
+#include "text.h"
 
 #include <cglm/cglm.h>
 #include <glad/glad.h>
 
-const char *vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"uniform mat4 model;\n"
-"uniform mat4 view;\n"
-"uniform mat4 projection;\n"
-"uniform float sizeMultiplier;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = projection*view*model*vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"   gl_PointSize = min((50*sizeMultiplier)/gl_Position.z, 400.0f);\n"
-"}\0";
-
-const char *fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"uniform vec3 objectColor;\n"
-"uniform vec3 lightColor;\n"
-"void main()\n"
-"{\n"
-"   FragColor = vec4(lightColor * objectColor, 1.0);\n"
-"}\0";
-
-GLuint vertexShader;
-GLuint fragmentShader;
 GLuint shaderProgram;
-
+GLuint textShader;
 
 vec3 camera_pos   = {0.0f, 0.0f,  7.0f};
 vec3 camera_front = {0.0f, 0.0f, -1.0f};
@@ -66,6 +45,7 @@ u32 objectArray_push(GLuint VAO, u32 nFaces){
 }
 void compileShaders(){
         shaderProgram = shCreateShaderProgram("shaders/simple_shader.vert", "shaders/simple_shader.frag");
+        textShader    = shCreateShaderProgram("shaders/text.vert", "shaders/text.frag");
 }
 
 
@@ -78,20 +58,33 @@ int viewLocation;
 int projLocation;   
 int sizeMultiplier;
 
-void renderer_init(){
-        if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
-                puts("glad was not initialized");
-                exit(1);
-        }
-        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+GLuint textVAO, textVBO;
+int textColor;
+int projection;
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glEnable(GL_PROGRAM_POINT_SIZE);
-        glEnable(GL_MULTISAMPLE);
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+void setup_text(){
+        glUseProgram(textShader);
+        text_init();
+        glUniform1i(glGetUniformLocation(textShader, "text"), 0);
+        glGenVertexArrays(1, &textVAO);
+        glGenBuffers(1, &textVBO);
+        glBindVertexArray(textVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float)*6*4, NULL, GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4*sizeof(float), 0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
 
+        textColor = glGetUniformLocation(textShader, "textColor");
+
+        mat4 ortho;
+        glm_ortho(0.0f, SCREEN_WIDTH, 0.0f, SCREEN_HEIGHT, -1.0f, 1.0f, ortho);
+        projection = glGetUniformLocation(textShader, "projection");
+        glUniformMatrix4fv(projection, 1, GL_FALSE, (const float*) ortho );
+}
+
+void setup_shaders(){
         compileShaders();
         glUseProgram(shaderProgram);
         vertexLightLocation = glGetUniformLocation(shaderProgram, "lightColor");
@@ -109,6 +102,29 @@ void renderer_init(){
         objectArray.array = NULL;
         objectArray.size  = 0;
 
+}
+
+void renderer_init(){
+        // GLAD
+        if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
+                puts("glad was not initialized");
+                exit(1);
+        }
+
+        // OpenGL
+        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glEnable(GL_PROGRAM_POINT_SIZE);
+        glEnable(GL_MULTISAMPLE);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // SHADER
+        setup_shaders();
+
+        // FreeType
+        setup_text();
 }
 
 void renderer_quit(){
@@ -135,7 +151,16 @@ void renderer_draw(){
 
         glDisable(GL_POLYGON_OFFSET_LINE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_DEPTH_TEST);
         **/
+}
+
+void renderer_draw_GUI(){
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        render_text("test", 0.0f, 0.0f, 1.0f, color.orange);
+        render_text("test", 0.5f, 0.5f, 1.0f, color.orange);
 }
 
 void camera_move(vec3 direction){
@@ -202,7 +227,7 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
 
 
         // MOVE GET UNIFORM LOCATION TO INIT
-        //glUseProgram(shaderProgram);
+        glUseProgram(shaderProgram);
         glUniform3f(vertexColorLocation, color.R, color.G, color.B);
         glUniform3f(viewPos, camera_pos[0], camera_pos[1], camera_pos[2]);
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, (const float*)model);
@@ -213,6 +238,7 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
         glBindVertexArray(object.VAO);
 
         glDrawElements(GL_TRIANGLES, object.nFaces, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
 }
 
 
@@ -243,11 +269,13 @@ GLuint renderer_create_VAO(const Model model){ // Create object from model
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
         return VAO;
 }
 
 u32 renderer_create_sphere(){
-        Model sphere = {.faces = 0, .vertices = NULL};
+        Model sphere = {.faces = {0}, .vertices = {NULL}};
 
         model_create_sphere(&sphere);
 
@@ -266,3 +294,41 @@ void camera_print_coords(){
         printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
 
+void render_text(const char* text, float x, float y, const float scale, const Color_RGBA color){
+        x = x*SCREEN_WIDTH;
+        y = y*SCREEN_HEIGHT;
+        glUseProgram(textShader);
+
+        glUniform3f(textColor, color.R, color.G, color.B);
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(textVAO);
+
+        for(const char* c = text; *c; c++){
+                Character ch = CharMap_Get(*c);
+
+                float xpos = x + ch.Bearing[0] * scale;
+                float ypos = y - (ch.Size[1] - ch.Bearing[1]) * scale;
+
+                float w = ch.Size[0] * scale;
+                float h = ch.Size[1] * scale;
+
+                float vertices[6][4] = {
+                        { xpos,     ypos + h, 0.0f, 0.0f },
+                        { xpos,     ypos,     0.0f, 1.0f },
+                        { xpos + w, ypos,     1.0f, 1.0f },
+
+                        { xpos,     ypos + h, 0.0f, 0.0f },
+                        { xpos + w, ypos,     1.0f, 1.0f },
+                        { xpos + w, ypos + h, 1.0f, 0.0f },
+                };
+
+                glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+                glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                x += (ch.Advance >> 6) * scale;
+        }
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D,0);
+}

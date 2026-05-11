@@ -188,6 +188,7 @@ void engine_update(Engine engine){
 void engine_draw(Engine engine){
         renderer_draw();
         engine.draw();
+        renderer_draw_GUI();
         SDL_GL_SwapWindow(glWindow);
 }
 
@@ -201,7 +202,7 @@ void engine_quit(){
 
 void engine_run(Engine engine){
         int quit = FALSE;
-        int counter = 0;
+        //int counter = 0;
 
         engine_init(engine);
 

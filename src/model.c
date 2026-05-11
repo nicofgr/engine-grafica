@@ -60,9 +60,9 @@ void model_pushFaces(Model* model, const u32_Array faces){
         }
 }
 void model_removeFace(Model* model, u32 face){  // Copiar a ultima pra face removida e realloc
-        u32 x1 = model->faces.array[(face*3)];
-        u32 x2 = model->faces.array[(face*3)+1];
-        u32 x3 = model->faces.array[(face*3)+2];
+        //u32 x1 = model->faces.array[(face*3)];
+        //u32 x2 = model->faces.array[(face*3)+1];
+        //u32 x3 = model->faces.array[(face*3)+2];
         //printf("Removing face %d: %d %d %d\n", face, x1, x2, x3);
         memcpy(&model->faces.array[face*3], &model->faces.array[(model->faces.size-1)*3], sizeof(u32)*3);
         u32* temp = (u32*)realloc(model->faces.array, sizeof(u32)*((model->faces.size-1)*3));

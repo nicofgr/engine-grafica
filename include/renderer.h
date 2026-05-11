@@ -15,5 +15,7 @@ void camera_print_coords();
 void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 scale);
 u32 renderer_create_sphere();
 void renderer_draw();
+void render_text(const char* text, float x, const float y, const float scale, const Color_RGBA color);
+void renderer_draw_GUI();
 
 #endif

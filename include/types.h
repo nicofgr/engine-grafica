@@ -23,9 +23,9 @@ typedef struct Color_RGBA{
         float A;
 }Color_RGBA;
 
-typedef struct{
+typedef struct String{
         char* string;
-        unsigned int size;
+        u32   size;
 } String;
 
 typedef struct{
