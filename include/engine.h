@@ -12,7 +12,7 @@ typedef struct Engine{
 
 void engine_run(Engine);
 void engine_quit();
-u32 create_sphere(vec3 position,  float radius, Color_RGBA color);
+u32 create_sphere(vec3 position,  float radius, Color_RGBA color, float luminosity);
 void draw_entity(u32 object);
 void move_entity(u32 entityID, vec3 position);
 void position_update(u32 entityID, vec3 newPos);

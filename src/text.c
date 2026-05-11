@@ -93,7 +93,7 @@ void text_init(){
         FT_Done_Face(face);
         FT_Done_FreeType(ft);
 
-        CharMap_print();
+        //CharMap_print();
 }
 
 

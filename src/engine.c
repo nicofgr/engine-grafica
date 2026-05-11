@@ -16,6 +16,7 @@ typedef struct Entity{
         vec3 position;
         vec3 scale;
         Color_RGBA color;
+        float luminosity;
 }Entity;
 
 typedef struct EntityArray{
@@ -25,17 +26,20 @@ typedef struct EntityArray{
 
 EntityArray entityArray;
 
-u32 EntityArray_Push(const u32 modelID, const vec3 position, const vec3 scale, const Color_RGBA color){
+u32 EntityArray_Push(const u32 modelID, const vec3 position, const vec3 scale, const Color_RGBA color, const float luminosity){
         if(entityArray.size == 0){
                 entityArray.array = (Entity*) malloc(sizeof(Entity));
         }else{
                 entityArray.array = (Entity*) realloc(entityArray.array, sizeof(Entity)*(entityArray.size+1));
         }
+
         u32 index = entityArray.size;
         entityArray.array[index].modelID = 0;
         glm_vec3_copy((float*)position, entityArray.array[index].position);
         glm_vec3_copy((float*)scale, entityArray.array[index].scale);
         entityArray.array[index].color = color;
+        entityArray.array[index].luminosity = luminosity;
+
         entityArray.size++;
         return index;
 }
@@ -76,18 +80,18 @@ void video_init(){
 
 }
 
-u32 create_sphere(vec3 position,  float radius, Color_RGBA color){
+u32 create_sphere(vec3 position,  float radius, Color_RGBA color, float luminosity){
 
         u32 modelID = renderer_create_sphere();
         vec3 scale = (vec3){radius, radius, radius};
-        u32 entityID = EntityArray_Push(modelID, position, scale, color);
+        u32 entityID = EntityArray_Push(modelID, position, scale, color, luminosity);
 
         return entityID;
 }
 
 void draw_entity(u32 entityID){
         Entity entity = EntityArray_Get(entityID);
-        renderer_draw_object(entity.color, entity.modelID, entity.position, entity.scale);
+        renderer_draw_object(entity.color, entity.modelID, entity.position, entity.scale, entity.luminosity);
 }
 
 void move_entity(u32 entityID, vec3 displacement){
