@@ -39,7 +39,7 @@ gprof: clean all
 run: all
 	./$(TARGET)
 clean:
-	rm -rf obj $(TARGET) analysis.txt gmon.out
+	rm -rf obj $(TARGET) analysis.txt gmon.out perf.data perf.data.old
 
 
 

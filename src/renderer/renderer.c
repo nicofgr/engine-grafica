@@ -221,6 +221,7 @@ void renderer_draw(){
         // TRANSPARENT OBJECTS
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glUseProgram(shaderProgram);
 
         /**
         // WIREFRAMES
@@ -239,7 +240,7 @@ void renderer_draw(){
 void renderer_draw_GUI(){
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+        glUseProgram(textShader);
         //render_text("test", 0.5f, 0.5f, 1.0f, color.orange);
 }
 
@@ -301,8 +302,6 @@ void renderer_draw_model(const u32 modelID, const vec3 position, const vec3 scal
         glm_mat4_identity(proj);
         glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, 100.0f, proj);
 
-
-        glUseProgram(shaderProgram);
 
         glUniform3f(ambientLoc, material.ambient.R, material.ambient.G, material.ambient.B);
         glUniform3f(diffuseLoc, material.diffuse.R, material.diffuse.G, material.diffuse.B);
@@ -396,10 +395,10 @@ void camera_print_coords(){
         printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
 
+// TODO optimize text rendering
 void render_text(const char* text, float x, float y, const float scale, const Color_RGB color){
         x = ((x+1)/2)*SCREEN_WIDTH;
         y = ((y+1)/2)*SCREEN_HEIGHT;
-        glUseProgram(textShader);
 
         glUniform3f(textColor, color.R, color.G, color.B);
         glActiveTexture(GL_TEXTURE0);
@@ -424,7 +423,7 @@ void render_text(const char* text, float x, float y, const float scale, const Co
                         { xpos + w, ypos + h, 1.0f, 0.0f },
                 };
 
-                glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+                glBindTexture(GL_TEXTURE_2D, ch.TextureID); // << Expensive
                 glBindBuffer(GL_ARRAY_BUFFER, textVBO);
                 glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);

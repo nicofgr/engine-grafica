@@ -220,8 +220,8 @@ void engine_update(Engine engine){
 void engine_draw(Engine engine){
         renderer_draw();
         engine.draw();
-        renderer_draw_GUI();
 
+        renderer_draw_GUI();
         char buffer[128];
         snprintf(buffer, 128, "Time:  %.2f sec", last_frame_time/1000.0f);
         render_text(buffer, -0.95f, 0.9f, 0.4f, color.orange);
