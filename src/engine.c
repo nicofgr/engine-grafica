@@ -107,7 +107,7 @@ void engine_init(Engine engine) {
         engine.init();
 }
 
-
+float speed = 5; // m/s (actually u/s)
 void input(int * quit){
         SDL_Event e;
         const Uint8* states = SDL_GetKeyboardState(NULL);
@@ -130,6 +130,7 @@ void input(int * quit){
                                 break;  
                 }
         }
+
         vec3 direction = {0.0f, 0.0f, 0.0f};
 
         if(states[SDL_SCANCODE_W]){
@@ -151,7 +152,7 @@ void input(int * quit){
                 direction[2] -= 1.0f; 
         }
         glm_normalize(direction);
-        camera_move(direction);
+        camera_move(direction, speed * delta_time);
 
         int x = 0, y = 0;
         if(SDL_GetRelativeMouseMode() == SDL_TRUE)
@@ -192,6 +193,16 @@ void engine_draw(Engine engine){
         renderer_draw();
         engine.draw();
         renderer_draw_GUI();
+
+        char buffer[128];
+        snprintf(buffer, 128, "Time: %.2f sec", last_frame_time/1000.0f);
+        render_text(buffer, -0.95f, 0.9f, 0.4f, color.orange);
+        snprintf(buffer, 128, "dt: %.2f ms", delta_time*1000.0f);
+        render_text(buffer, -0.95f, 0.8f, 0.4f, color.orange);
+        snprintf(buffer, 128, "Speed: %.2f m/s", speed);
+        render_text(buffer, -0.95f, 0.7f, 0.4f, color.orange);
+
+
         SDL_GL_SwapWindow(glWindow);
 }
 
