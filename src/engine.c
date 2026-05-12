@@ -1,9 +1,8 @@
 #include "engine.h"
 #include "cglm/vec3.h"
-#include "model.h"
 #include "types.h"
 #include "constants.h"
-#include "renderer.h"
+#include "renderer/renderer.h"
 
 SDL_Window*   glWindow = NULL;
 SDL_GLContext glContext = NULL;

@@ -1,10 +1,10 @@
-#include "renderer.h"
+#include "renderer/renderer.h"
 #include "cglm/cam.h"
 #include "types.h"
 #include "model.h"
 #include "constants.h"
-#include "shader.h"
-#include "text.h"
+#include "renderer/shader.h"
+#include "renderer/text.h"
 
 #include <cglm/cglm.h>
 #include <glad/glad.h>
@@ -49,10 +49,10 @@ void compileShaders(){
 }
 
 
-int viewPos;
-int vertexLightLocation;
-int lightPosLocation;
+//int vertexLightLocation;
+//int lightPosLocation;
 int transformLocation;
+int viewPos;
 int viewLocation; 
 int projLocation;   
 int sizeMultiplier;
@@ -62,6 +62,11 @@ int ambientLoc;
 int diffuseLoc;
 int specularLoc;
 int shininessLoc;
+
+int lightPos;
+int lightAmbient;
+int lightDiffuse;
+int lightSpecular;
 
 GLuint textVAO, textVBO;
 int textColor;
@@ -92,8 +97,10 @@ void setup_text(){
 void setup_shaders(){
         compileShaders();
         glUseProgram(shaderProgram);
-        vertexLightLocation = glGetUniformLocation(shaderProgram, "lightColor");
-        lightPosLocation    = glGetUniformLocation(shaderProgram, "lightPos");
+        lightPos      = glGetUniformLocation(shaderProgram, "light.position");
+        lightAmbient  = glGetUniformLocation(shaderProgram, "light.ambient");
+        lightDiffuse  = glGetUniformLocation(shaderProgram, "light.diffuse");
+        lightSpecular = glGetUniformLocation(shaderProgram, "light.specular");
 
         transformLocation   = glGetUniformLocation(shaderProgram, "model");
         viewLocation        = glGetUniformLocation(shaderProgram, "view");
@@ -107,8 +114,10 @@ void setup_shaders(){
         specularLoc         = glGetUniformLocation(shaderProgram, "material.specular");
         shininessLoc        = glGetUniformLocation(shaderProgram, "material.shininess");
 
-        glUniform3f(vertexLightLocation, color.star.R, color.star.G, color.star.B); // Light color
-        glUniform3f(lightPosLocation, 0.0f, 0.0f, 0.0f);
+        glUniform3f(lightPos, 0.0f, 0.0f, 0.0f);
+        glUniform3f(lightAmbient, 0.2*color.star.R, 0.2*color.star.G, 0.2*color.star.B); // Light color
+        glUniform3f(lightDiffuse, color.star.R, color.star.G, color.star.B); // Light color
+        glUniform3f(lightSpecular, 1.0f, 1.0f, 1.0f); // Light color
 
         objectArray.array = NULL;
         objectArray.size  = 0;

@@ -2,11 +2,12 @@ CC = clang
 CFLAGS = -std=c99 -Wall $(shell pkg-config --cflags freetype2)
 LIBS = -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm $(shell pkg-config --libs freetype2)
 TARGET = saida.out
+SDIR = ./src/*.c ./src/renderer/*.c
 
 build: 
 	#clang -I./include/ -std=c99 -Wall ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -o  saida.out
 	#clang -I./include/ -std=c99 -Wall -Werror -fsanitize=address ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -o  saida.out
-	$(CC) -I./include/ $(CFLAGS) -fsanitize=address ./src/*.c $(LIBS) -o  $(TARGET)
+	$(CC) -I./include/ $(CFLAGS) -fsanitize=address $(SDIR) $(LIBS) -o  $(TARGET)
 	#Turn -fsanitize off for release build
 
 perf:
