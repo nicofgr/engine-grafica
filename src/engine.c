@@ -10,45 +10,45 @@ SDL_GLContext glContext = NULL;
 int last_frame_time = 0;
 int lastTime = 0;
 
-typedef struct Entity{
+typedef struct Object{
         u32  modelID;
         vec3 position;
         vec3 scale;
         Color_RGBA color;
         float luminosity;
-}Entity;
+}Object;
 
-typedef struct EntityArray{
-        Entity* array;
+typedef struct ObjectArray{
+        Object* array;
         u32 size;
-}EntityArray;
+}ObjectArray;
 
-EntityArray entityArray;
+ObjectArray objectArray;
 
-u32 EntityArray_Push(const u32 modelID, const vec3 position, const vec3 scale, const Color_RGBA color, const float luminosity){
-        if(entityArray.size == 0){
-                entityArray.array = (Entity*) malloc(sizeof(Entity));
+u32 ObjectArray_Push(const u32 modelID, const vec3 position, const vec3 scale, const Color_RGBA color, const float luminosity){
+        if(objectArray.size == 0){
+                objectArray.array = (Object*) malloc(sizeof(Object));
         }else{
-                entityArray.array = (Entity*) realloc(entityArray.array, sizeof(Entity)*(entityArray.size+1));
+                objectArray.array = (Object*) realloc(objectArray.array, sizeof(Object)*(objectArray.size+1));
         }
 
-        u32 index = entityArray.size;
-        entityArray.array[index].modelID = 0;
-        glm_vec3_copy((float*)position, entityArray.array[index].position);
-        glm_vec3_copy((float*)scale, entityArray.array[index].scale);
-        entityArray.array[index].color = color;
-        entityArray.array[index].luminosity = luminosity;
+        u32 index = objectArray.size;
+        objectArray.array[index].modelID = 0;
+        glm_vec3_copy((float*)position, objectArray.array[index].position);
+        glm_vec3_copy((float*)scale, objectArray.array[index].scale);
+        objectArray.array[index].color = color;
+        objectArray.array[index].luminosity = luminosity;
 
-        entityArray.size++;
+        objectArray.size++;
         return index;
 }
 
-Entity EntityArray_Get(const u32 entityID){
-        if(entityID >= entityArray.size){
-                fprintf(stderr, "[ERROR] entityID: %d out of bounds", entityID);
+Object ObjectArray_Get(const u32 objectID){
+        if(objectID >= objectArray.size){
+                fprintf(stderr, "[ERROR] objectID: %d out of bounds", objectID);
                 exit(0);
         }
-        return entityArray.array[entityID];
+        return objectArray.array[objectID];
 }
 
 void video_init(){
@@ -83,22 +83,22 @@ u32 create_sphere(vec3 position,  float radius, Color_RGBA color, float luminosi
 
         u32 modelID = renderer_create_sphere();
         vec3 scale = (vec3){radius, radius, radius};
-        u32 entityID = EntityArray_Push(modelID, position, scale, color, luminosity);
+        u32 objectID = ObjectArray_Push(modelID, position, scale, color, luminosity);
 
-        return entityID;
+        return objectID;
 }
 
-void draw_entity(u32 entityID){
-        Entity entity = EntityArray_Get(entityID);
-        renderer_draw_model(entity.color, entity.modelID, entity.position, entity.scale, entity.luminosity);
+void draw_object(u32 objectID){
+        Object object = ObjectArray_Get(objectID);
+        renderer_draw_model(object.color, object.modelID, object.position, object.scale, object.luminosity);
 }
 
-void move_entity(u32 entityID, vec3 displacement){
-        glm_vec3_add(displacement, entityArray.array[entityID].position, entityArray.array[entityID].position);
+void move_object(u32 objectID, vec3 displacement){
+        glm_vec3_add(displacement, objectArray.array[objectID].position, objectArray.array[objectID].position);
 }
 
-void position_update(u32 entityID, vec3 newPos){
-        glm_vec3_copy(newPos, entityArray.array[entityID].position);
+void position_update(u32 objectID, vec3 newPos){
+        glm_vec3_copy(newPos, objectArray.array[objectID].position);
 }
 
 void engine_init(Engine engine) {
@@ -210,7 +210,7 @@ void engine_quit(){
         SDL_GL_DeleteContext(glContext);
         SDL_DestroyWindow(glWindow);
         SDL_Quit();
-        free(entityArray.array);
+        free(objectArray.array);
         renderer_quit();
 }
 

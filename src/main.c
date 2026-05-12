@@ -19,9 +19,9 @@ void update(){
 }
 
 void draw(){
-        draw_entity(sun);
-        draw_entity(planet1);
-        draw_entity(planet2);
+        draw_object(sun);
+        draw_object(planet1);
+        draw_object(planet2);
 }
 
 Engine engine = {
