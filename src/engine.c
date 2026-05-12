@@ -10,7 +10,7 @@ SDL_GLContext glContext = NULL;
 int last_frame_time = 0;
 int lastTime = 0;
 
-typedef struct Object{
+typedef struct Object{  // Model, Position, Rotation, Scale
         u32  modelID;
         vec3 position;
         vec3 scale;
@@ -33,7 +33,7 @@ u32 ObjectArray_Push(const u32 modelID, const vec3 position, const vec3 scale, c
         }
 
         u32 index = objectArray.size;
-        objectArray.array[index].modelID = 0;
+        objectArray.array[index].modelID = modelID;
         glm_vec3_copy((float*)position, objectArray.array[index].position);
         glm_vec3_copy((float*)scale, objectArray.array[index].scale);
         objectArray.array[index].color = color;
@@ -81,9 +81,9 @@ void video_init(){
 
 u32 create_sphere(vec3 position,  float radius, Color_RGBA color, float luminosity){
 
-        u32 modelID = renderer_create_sphere();
+        u32  modelID = renderer_get_sphere();
         vec3 scale = (vec3){radius, radius, radius};
-        u32 objectID = ObjectArray_Push(modelID, position, scale, color, luminosity);
+        u32  objectID = ObjectArray_Push(modelID, position, scale, color, luminosity);
 
         return objectID;
 }

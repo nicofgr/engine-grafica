@@ -19,9 +19,13 @@ vec3 camera_up    = {0.0f, 1.0f,  0.0f};
 float yaw = -90.0f;
 float pitch = 0.0f;
 
-typedef struct Model{ // Meshes, textures, materials, rig, shaders
+// MODEL
+typedef struct Model{ // Meshes, textures, materials, rig, shaders, uv mapping
+        // Mesh
         GLuint VAO;
         u32    nFaces;
+        // Material
+        u32 materialID;
 }Model;
 
 typedef struct ModelArray{
@@ -31,6 +35,25 @@ typedef struct ModelArray{
 
 ModelArray modelArray;
 
+// MATERIAL
+typedef struct Material{
+        Color_RGB ambient;
+        Color_RGB diffuse;
+        Color_RGB specular;
+        float     shininess;
+}Material;
+
+typedef struct MaterialArray{
+        Material* array;
+        u32       size;
+}MaterialArray;
+
+MaterialArray materialArray;
+
+// PROTOTYPES
+u32 renderer_create_sphere();
+
+// DEFINITIONS
 u32 modelArray_push(GLuint VAO, u32 nFaces){
         if(modelArray.size == 0){
                 modelArray.array = (Model*) malloc(sizeof(Model));
@@ -43,6 +66,22 @@ u32 modelArray_push(GLuint VAO, u32 nFaces){
         modelArray.size++;
         return index;
 }
+
+u32 materialArray_push(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess){
+        if(materialArray.size == 0){
+                materialArray.array = (Material*) malloc(sizeof(Material));
+        }else{
+                materialArray.array = (Material*) realloc(materialArray.array, sizeof(Material)*(materialArray.size+1));
+        }
+        u32 index = materialArray.size;
+        materialArray.array[index].ambient   = ambient;
+        materialArray.array[index].diffuse   = diffuse;
+        materialArray.array[index].specular  = specular;
+        materialArray.array[index].shininess = shininess;
+        materialArray.size++;
+        return index;
+}
+
 void compileShaders(){
         shaderProgram = shCreateShaderProgram("shaders/simple_shader.vert", "shaders/simple_shader.frag");
         textShader    = shCreateShaderProgram("shaders/text.vert", "shaders/text.frag");
@@ -145,6 +184,9 @@ void renderer_init(){
 
         // FreeType
         setup_text();
+
+        // Standard models (sphere, quad, square, etc)
+        renderer_create_sphere();
 }
 
 void renderer_quit(){
@@ -309,7 +351,7 @@ u32 renderer_create_sphere(){
         return ID;
 }
 
-u32 renderer_get_spherer(){
+u32 renderer_get_sphere(){
         return 0;
 }
 

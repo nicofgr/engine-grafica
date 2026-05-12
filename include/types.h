@@ -23,6 +23,12 @@ typedef struct Color_RGBA{
         float A;
 }Color_RGBA;
 
+typedef struct Color_RGB{
+        float R;
+        float G;
+        float B;
+}Color_RGB;
+
 typedef struct String{
         char* string;
         u32   size;
