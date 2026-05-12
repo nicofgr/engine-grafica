@@ -8,9 +8,12 @@ u32 planet2;
 void init(){
         vec3 position = {0.0f, 0.0f, 0.0f};
 
-        sun = create_sphere(position, 2.0f, color.star, 2.0f);
-        planet1 = create_sphere((vec3){5.0f, 0.0f, 0.0f}, 0.2f, color.red, 0.0f);
-        planet2 = create_sphere((vec3){10.0f, 0.0f, 0.0f}, 0.5f, color.red, 0.0f);
+        sun     = create_sphere(position, 2.0f);
+        planet1 = create_sphere((vec3){5.0f, 0.0f, 0.0f}, 0.2f);
+        planet2 = create_sphere((vec3){10.0f, 0.0f, 0.0f}, 0.5f);
+
+        u32 glowingMat = create_material(color.star, color.star, color.star, 32, color.star);
+        change_material(sun, glowingMat);
 }
 
 void update(){

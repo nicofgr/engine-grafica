@@ -41,6 +41,7 @@ typedef struct Material{
         Color_RGB diffuse;
         Color_RGB specular;
         float     shininess;
+        Color_RGB emission;
 }Material;
 
 typedef struct MaterialArray{
@@ -54,20 +55,25 @@ MaterialArray materialArray;
 u32 renderer_create_sphere();
 
 // DEFINITIONS
-u32 modelArray_push(GLuint VAO, u32 nFaces){
+u32 modelArray_push(GLuint VAO, u32 nFaces, u32 materialID){
         if(modelArray.size == 0){
                 modelArray.array = (Model*) malloc(sizeof(Model));
         }else{
                 modelArray.array = (Model*) realloc(modelArray.array, sizeof(Model)*(modelArray.size+1));
         }
         u32 index = modelArray.size;
-        modelArray.array[index].VAO = VAO;
-        modelArray.array[index].nFaces = nFaces;
+        modelArray.array[index].VAO        = VAO;
+        modelArray.array[index].nFaces     = nFaces;
+        modelArray.array[index].materialID = materialID;
         modelArray.size++;
         return index;
 }
 
-u32 materialArray_push(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess){
+Model modelArray_Get(u32 modelID){
+        return modelArray.array[modelID];
+}
+
+u32 materialArray_push(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission){
         if(materialArray.size == 0){
                 materialArray.array = (Material*) malloc(sizeof(Material));
         }else{
@@ -78,8 +84,17 @@ u32 materialArray_push(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular,
         materialArray.array[index].diffuse   = diffuse;
         materialArray.array[index].specular  = specular;
         materialArray.array[index].shininess = shininess;
+        materialArray.array[index].emission  = emission;
         materialArray.size++;
         return index;
+}
+
+Material materialArray_Get(u32 materialID){
+        if(materialID >= materialArray.size){
+                fprintf(stderr, "[ERROR] materialID (%d) greater than materialArray size (%d)\n", materialID, materialArray.size);
+                exit(0);
+        }
+        return materialArray.array[materialID];
 }
 
 void compileShaders(){
@@ -96,11 +111,11 @@ int viewLocation;
 int projLocation;   
 int sizeMultiplier;
 
-int luminosityLoc;
 int ambientLoc;
 int diffuseLoc;
 int specularLoc;
 int shininessLoc;
+int emissionLoc;
 
 int lightPos;
 int lightAmbient;
@@ -147,11 +162,11 @@ void setup_shaders(){
         sizeMultiplier    = glGetUniformLocation(shaderProgram, "sizeMultiplier");
         viewPos           = glGetUniformLocation(shaderProgram, "viewPos");
 
-        luminosityLoc     = glGetUniformLocation(shaderProgram, "luminosity");
         ambientLoc        = glGetUniformLocation(shaderProgram, "material.ambient");
         diffuseLoc        = glGetUniformLocation(shaderProgram, "material.diffuse");
         specularLoc       = glGetUniformLocation(shaderProgram, "material.specular");
         shininessLoc      = glGetUniformLocation(shaderProgram, "material.shininess");
+        emissionLoc       = glGetUniformLocation(shaderProgram, "material.emission");
 
         glUniform3f(lightPos, 0.0f, 0.0f, 0.0f);
         glUniform3f(lightAmbient, 0.2*color.star.R, 0.2*color.star.G, 0.2*color.star.B); // Light color
@@ -187,6 +202,9 @@ void renderer_init(){
 
         // Standard models (sphere, quad, square, etc)
         renderer_create_sphere();
+
+        // Standard material
+        materialArray_push(color.red, color.red, color.red, 32.0f, color.black);
 }
 
 void renderer_quit(){
@@ -255,12 +273,10 @@ vec3 translation = {0.0f, 0.0f, 0.0f};
 vec3 scale = {1.0f, 1.0f, 1.0f};
 
 
-Model modelArray_Get(u32 ID){
-        return modelArray.array[ID];
-}
 
-void renderer_draw_model(const Color_RGBA color, u32 ID, vec3 position, vec3 scale, float luminosity){
-        Model model = modelArray_Get(ID);
+void renderer_draw_model(const u32 modelID, const vec3 position, const vec3 scale){
+        Model model = modelArray_Get(modelID);
+        Material material = materialArray_Get(model.materialID);
 
         mat4 mesh;
         glm_mat4_identity(mesh);
@@ -286,13 +302,14 @@ void renderer_draw_model(const Color_RGBA color, u32 ID, vec3 position, vec3 sca
         glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, 100.0f, proj);
 
 
-        // MOVE GET UNIFORM LOCATION TO INIT
         glUseProgram(shaderProgram);
-        glUniform3f(ambientLoc, color.R, color.G, color.B);
-        glUniform3f(diffuseLoc, color.R, color.G, color.B);
-        glUniform3f(specularLoc, color.R, color.G, color.B);
-        glUniform1f(shininessLoc, 32);
-        glUniform1f(luminosityLoc, luminosity);
+
+        glUniform3f(ambientLoc, material.ambient.R, material.ambient.G, material.ambient.B);
+        glUniform3f(diffuseLoc, material.diffuse.R, material.diffuse.G, material.diffuse.B);
+        glUniform3f(specularLoc, material.specular.R, material.specular.G, material.specular.B);
+        glUniform1f(shininessLoc, material.shininess);
+        glUniform3f(emissionLoc, material.emission.R, material.emission.G, material.emission.B);
+
         glUniform3f(viewPos, camera_pos[0], camera_pos[1], camera_pos[2]);
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, (const float*)mesh);
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (const float*)view);
@@ -305,6 +322,23 @@ void renderer_draw_model(const Color_RGBA color, u32 ID, vec3 position, vec3 sca
         glBindVertexArray(0);
 }
 
+u32 renderer_duplicate_model(u32 modelID){
+        Model duplicate = modelArray_Get(modelID);
+        u32 newID = modelArray_push(duplicate.VAO, duplicate.nFaces, duplicate.materialID);
+        return newID;
+}
+
+void renderer_change_material(u32 modelID, u32 materialID){
+        if(materialID >= materialArray.size){
+                fprintf(stderr,"[ERROR] Material %d is not on materialArray", materialID);
+                exit(1);
+        }
+        modelArray.array[modelID].materialID = materialID;
+}
+
+u32 renderer_create_material(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission){
+        return materialArray_push(ambient, diffuse, specular, shininess, emission);
+}
 
 GLuint renderer_create_VAO(const Mesh mesh){ // Create model from mesh
         GLuint VAO;
@@ -338,17 +372,18 @@ GLuint renderer_create_VAO(const Mesh mesh){ // Create model from mesh
         return VAO;
 }
 
+u32 renderer_create_model(Mesh mesh, u32 materialID){
+        GLuint VAO = renderer_create_VAO(mesh);
+        u32 modelID = modelArray_push(VAO, mesh.faces.size*3, materialID);
+        return modelID;
+}
+
 u32 renderer_create_sphere(){
         Mesh sphere = {.faces = {0}, .vertices = {NULL}};
-
         mesh_create_sphere(&sphere);
-
-        GLuint VAO = renderer_create_VAO(sphere);
-
-        u32 ID = modelArray_push(VAO, sphere.faces.size*3);
-
+        u32 modelID = renderer_create_model(sphere, 0);
         mesh_free(&sphere); 
-        return ID;
+        return modelID;
 }
 
 u32 renderer_get_sphere(){
@@ -361,7 +396,7 @@ void camera_print_coords(){
         printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
 
-void render_text(const char* text, float x, float y, const float scale, const Color_RGBA color){
+void render_text(const char* text, float x, float y, const float scale, const Color_RGB color){
         x = ((x+1)/2)*SCREEN_WIDTH;
         y = ((y+1)/2)*SCREEN_HEIGHT;
         glUseProgram(textShader);

@@ -13,6 +13,14 @@
 #define FOV 70
 #define GOLDEN_RATIO 1.61803398875
 
+typedef struct{
+        Color_RGB red;
+        Color_RGB green;
+        Color_RGB orange;
+        Color_RGB black;
+        Color_RGB star;
+} ColorPallete;
+
 extern const ColorPallete color;
 
 #endif

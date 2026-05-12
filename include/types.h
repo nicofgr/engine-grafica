@@ -34,12 +34,5 @@ typedef struct String{
         u32   size;
 } String;
 
-typedef struct{
-        Color_RGBA red;
-        Color_RGBA green;
-        Color_RGBA orange;
-        Color_RGBA star;
-} ColorPallete;
-
 void Vec3Array_Push(Vec3_Array*, vec3);
 #endif
