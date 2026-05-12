@@ -19,28 +19,28 @@ vec3 camera_up    = {0.0f, 1.0f,  0.0f};
 float yaw = -90.0f;
 float pitch = 0.0f;
 
-typedef struct Object{
+typedef struct Model{ // Meshes, textures, materials, rig, shaders
         GLuint VAO;
         u32    nFaces;
-}Object;
+}Model;
 
-typedef struct ObjectArray{
-        Object* array;
+typedef struct ModelArray{
+        Model* array;
         u32     size;
-}ObjectArray;
+}ModelArray;
 
-ObjectArray objectArray;
+ModelArray modelArray;
 
-u32 objectArray_push(GLuint VAO, u32 nFaces){
-        if(objectArray.size == 0){
-                objectArray.array = (Object*) malloc(sizeof(Object));
+u32 modelArray_push(GLuint VAO, u32 nFaces){
+        if(modelArray.size == 0){
+                modelArray.array = (Model*) malloc(sizeof(Model));
         }else{
-                objectArray.array = (Object*) realloc(objectArray.array, sizeof(Object)*(objectArray.size+1));
+                modelArray.array = (Model*) realloc(modelArray.array, sizeof(Model)*(modelArray.size+1));
         }
-        u32 index = objectArray.size;
-        objectArray.array[index].VAO = VAO;
-        objectArray.array[index].nFaces = nFaces;
-        objectArray.size++;
+        u32 index = modelArray.size;
+        modelArray.array[index].VAO = VAO;
+        modelArray.array[index].nFaces = nFaces;
+        modelArray.size++;
         return index;
 }
 void compileShaders(){
@@ -119,8 +119,8 @@ void setup_shaders(){
         glUniform3f(lightDiffuse, color.star.R, color.star.G, color.star.B); // Light color
         glUniform3f(lightSpecular, 1.0f, 1.0f, 1.0f); // Light color
 
-        objectArray.array = NULL;
-        objectArray.size  = 0;
+        modelArray.array = NULL;
+        modelArray.size  = 0;
 
 }
 
@@ -148,7 +148,7 @@ void renderer_init(){
 }
 
 void renderer_quit(){
-        free(objectArray.array);
+        free(modelArray.array);
 }
 
 void renderer_draw(){
@@ -167,7 +167,7 @@ void renderer_draw(){
         glEnable(GL_POLYGON_OFFSET_LINE);
         glPolygonOffset(-1.0, -1.0);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        //draw_object(color.orange, *mesh);
+        //draw_model(color.orange, *mesh);
 
         glDisable(GL_POLYGON_OFFSET_LINE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -213,12 +213,12 @@ vec3 translation = {0.0f, 0.0f, 0.0f};
 vec3 scale = {1.0f, 1.0f, 1.0f};
 
 
-Object objectArray_Get(u32 ID){
-        return objectArray.array[ID];
+Model modelArray_Get(u32 ID){
+        return modelArray.array[ID];
 }
 
-void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 scale, float luminosity){
-        Object object = objectArray_Get(ID);
+void renderer_draw_model(const Color_RGBA color, u32 ID, vec3 position, vec3 scale, float luminosity){
+        Model model = modelArray_Get(ID);
 
         mat4 mesh;
         glm_mat4_identity(mesh);
@@ -257,14 +257,14 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
         glUniformMatrix4fv(projLocation, 1, GL_FALSE, (const float*)proj);
         glUniform1f(sizeMultiplier, 1);
 
-        glBindVertexArray(object.VAO);
+        glBindVertexArray(model.VAO);
 
-        glDrawElements(GL_TRIANGLES, object.nFaces, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, model.nFaces, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 }
 
 
-GLuint renderer_create_VAO(const Mesh mesh){ // Create object from mesh
+GLuint renderer_create_VAO(const Mesh mesh){ // Create model from mesh
         GLuint VAO;
         GLuint VBO;
         GLuint EBO;
@@ -303,7 +303,7 @@ u32 renderer_create_sphere(){
 
         GLuint VAO = renderer_create_VAO(sphere);
 
-        u32 ID = objectArray_push(VAO, sphere.faces.size*3);
+        u32 ID = modelArray_push(VAO, sphere.faces.size*3);
 
         mesh_free(&sphere); 
         return ID;

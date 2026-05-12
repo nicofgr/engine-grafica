@@ -12,7 +12,7 @@ void camera_move(vec3 direction, float speed);
 void camera_rotate(float, float);
 void camera_print_coords();
 
-void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 scale, float luminosity);
+void renderer_draw_model(const Color_RGBA color, u32 ID, vec3 position, vec3 scale, float luminosity);
 u32 renderer_create_sphere();
 void renderer_draw();
 void render_text(const char* text, float x, const float y, const float scale, const Color_RGBA color);

@@ -90,7 +90,7 @@ u32 create_sphere(vec3 position,  float radius, Color_RGBA color, float luminosi
 
 void draw_entity(u32 entityID){
         Entity entity = EntityArray_Get(entityID);
-        renderer_draw_object(entity.color, entity.modelID, entity.position, entity.scale, entity.luminosity);
+        renderer_draw_model(entity.color, entity.modelID, entity.position, entity.scale, entity.luminosity);
 }
 
 void move_entity(u32 entityID, vec3 displacement){

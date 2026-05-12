@@ -2,7 +2,7 @@
 #define MESH_H
 #include "types.h"
 
-typedef struct Mesh{
+typedef struct Mesh{ // Verts, Edges, Faces, Normals, Vert colors
         Vec3_Array vertices;
         Vec3_Array normals;
         u32_Array  faces;
