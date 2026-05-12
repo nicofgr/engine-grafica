@@ -8,7 +8,7 @@
 void renderer_init();
 void renderer_quit();
 
-void camera_move(vec3);
+void camera_move(vec3 direction, float speed);
 void camera_rotate(float, float);
 void camera_print_coords();
 
