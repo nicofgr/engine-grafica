@@ -22,32 +22,28 @@ obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-build: 
-	#clang -I./include/ -std=c99 -Wall ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -o  saida.out
-	#clang -I./include/ -std=c99 -Wall -Werror -fsanitize=address ./src/*.c -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -o  saida.out
-	$(CC)  $(CFLAGS) -fsanitize=address $(SOURCES) $(LIBS) -o  $(TARGET)
-	#Turn -fsanitize off for release build
-
-perf:
-	$(CC) $(CFLAGS) $(SOURCES) $(LIBS) -p -fno-omit-frame-pointer -o $(TARGET)
-	sudo perf record -g ./saida.out
-	sudo perf report --dsos=saida.out
-
 gprof:
 	$(CC) $(CFLAGS) $(SOURCES) $(LIBS) -pg -o gprof.out
-	./gprof.out
-	gprof ./gprof.out gmon.out > analysis.txt
-	rm ./gprof.out
 	rm gmon.out
 
-release:
-	$(CC) $(CFLAGS) $(SDIR) $(LIBS) -o  $(TARGET)
+release: CFLAGS = -std=c99 -Wall -Wextra -O3
+release: clean $(TARGET)
+
+perf: CFLAGS = -std=c99 -Wall -Wextra -fno-omit-frame-pointer -O2 -g
+perf: all
+	sudo perf record -g ./$(TARGET)
+	sudo perf report --dsos=$(TARGET)
+
+gprof: CFLAGS = -std=c99 -Wall -Wextra -pg -g
+gprof: clean all
+	./$(TARGET)
+	gprof ./$(TARGET) gmon.out > analysis.txt
+	@rm -f gmon.out
 
 run: all
-	./saida.out
-
+	./$(TARGET)
 clean:
-	rm -rf obj $(TARGET)
+	rm -rf obj $(TARGET) analysis.txt gmon.out
 
 
 
