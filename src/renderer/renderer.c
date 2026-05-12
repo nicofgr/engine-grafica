@@ -1,7 +1,7 @@
 #include "renderer/renderer.h"
 #include "cglm/cam.h"
 #include "types.h"
-#include "model.h"
+#include "mesh.h"
 #include "constants.h"
 #include "renderer/shader.h"
 #include "renderer/text.h"
@@ -102,17 +102,17 @@ void setup_shaders(){
         lightDiffuse  = glGetUniformLocation(shaderProgram, "light.diffuse");
         lightSpecular = glGetUniformLocation(shaderProgram, "light.specular");
 
-        transformLocation   = glGetUniformLocation(shaderProgram, "model");
-        viewLocation        = glGetUniformLocation(shaderProgram, "view");
-        projLocation        = glGetUniformLocation(shaderProgram, "projection");
-        sizeMultiplier      = glGetUniformLocation(shaderProgram, "sizeMultiplier");
-        viewPos             = glGetUniformLocation(shaderProgram, "viewPos");
+        transformLocation = glGetUniformLocation(shaderProgram, "model");
+        viewLocation      = glGetUniformLocation(shaderProgram, "view");
+        projLocation      = glGetUniformLocation(shaderProgram, "projection");
+        sizeMultiplier    = glGetUniformLocation(shaderProgram, "sizeMultiplier");
+        viewPos           = glGetUniformLocation(shaderProgram, "viewPos");
 
-        luminosityLoc       = glGetUniformLocation(shaderProgram, "luminosity");
-        ambientLoc          = glGetUniformLocation(shaderProgram, "material.ambient");
-        diffuseLoc          = glGetUniformLocation(shaderProgram, "material.diffuse");
-        specularLoc         = glGetUniformLocation(shaderProgram, "material.specular");
-        shininessLoc        = glGetUniformLocation(shaderProgram, "material.shininess");
+        luminosityLoc     = glGetUniformLocation(shaderProgram, "luminosity");
+        ambientLoc        = glGetUniformLocation(shaderProgram, "material.ambient");
+        diffuseLoc        = glGetUniformLocation(shaderProgram, "material.diffuse");
+        specularLoc       = glGetUniformLocation(shaderProgram, "material.specular");
+        shininessLoc      = glGetUniformLocation(shaderProgram, "material.shininess");
 
         glUniform3f(lightPos, 0.0f, 0.0f, 0.0f);
         glUniform3f(lightAmbient, 0.2*color.star.R, 0.2*color.star.G, 0.2*color.star.B); // Light color
@@ -167,7 +167,7 @@ void renderer_draw(){
         glEnable(GL_POLYGON_OFFSET_LINE);
         glPolygonOffset(-1.0, -1.0);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        //draw_object(color.orange, *model);
+        //draw_object(color.orange, *mesh);
 
         glDisable(GL_POLYGON_OFFSET_LINE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -179,12 +179,11 @@ void renderer_draw(){
 void renderer_draw_GUI(){
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        render_text("test", 0.0f, 0.0f, 1.0f, color.orange);
-        render_text("test", 0.5f, 0.5f, 1.0f, color.orange);
+
+        //render_text("test", 0.5f, 0.5f, 1.0f, color.orange);
 }
 
-void camera_move(vec3 direction){
-        const float camera_speed = 0.1f;
+void camera_move(vec3 direction, const float speed){
 
         float x = direction[0]; 
         float y = direction[1]; 
@@ -192,13 +191,12 @@ void camera_move(vec3 direction){
 
         vec3 aux;
         glm_vec3_copy(camera_front, aux);
-        aux[1] = 0.0f;
-        glm_vec3_muladds(aux, x*camera_speed, camera_pos); //pos += (front*spd)
+        glm_vec3_muladds(aux, x*speed, camera_pos); //pos += (front*spd)
 
         glm_vec3_crossn(camera_front, camera_up, aux);
-        glm_vec3_muladds(aux, y*camera_speed, camera_pos);
+        glm_vec3_muladds(aux, y*speed, camera_pos);
 
-        glm_vec3_muladds(camera_up, z*camera_speed, camera_pos);
+        glm_vec3_muladds(camera_up, z*speed, camera_pos);
 }
 
 void camera_rotate(float x, float y){
@@ -222,12 +220,12 @@ Object objectArray_Get(u32 ID){
 void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 scale, float luminosity){
         Object object = objectArray_Get(ID);
 
-        mat4 model;
-        glm_mat4_identity(model);
-        glm_translate(model, position);
+        mat4 mesh;
+        glm_mat4_identity(mesh);
+        glm_translate(mesh, position);
         float rotate_speed = -1.0f/10.0; // frequency
-        glm_rotate(model, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
-        glm_scale(model, scale);
+        glm_rotate(mesh, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
+        glm_scale(mesh, scale);
 
         mat4 view;
         glm_mat4_identity(view);
@@ -254,7 +252,7 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
         glUniform1f(shininessLoc, 32);
         glUniform1f(luminosityLoc, luminosity);
         glUniform3f(viewPos, camera_pos[0], camera_pos[1], camera_pos[2]);
-        glUniformMatrix4fv(transformLocation, 1, GL_FALSE, (const float*)model);
+        glUniformMatrix4fv(transformLocation, 1, GL_FALSE, (const float*)mesh);
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (const float*)view);
         glUniformMatrix4fv(projLocation, 1, GL_FALSE, (const float*)proj);
         glUniform1f(sizeMultiplier, 1);
@@ -266,7 +264,7 @@ void renderer_draw_object(const Color_RGBA color, u32 ID, vec3 position, vec3 sc
 }
 
 
-GLuint renderer_create_VAO(const Model model){ // Create object from model
+GLuint renderer_create_VAO(const Mesh mesh){ // Create object from mesh
         GLuint VAO;
         GLuint VBO;
         GLuint EBO;
@@ -278,16 +276,16 @@ GLuint renderer_create_VAO(const Model model){ // Create object from model
         glBindVertexArray(VAO);
 
         Vec3_Array VBO_data = {.array = NULL, .size = 0};
-        for(int i = 0; i < model.vertices.size; i++){
-                Vec3Array_Push(&VBO_data, model.vertices.array[i]);
-                Vec3Array_Push(&VBO_data, model.normals.array[i]);
+        for(int i = 0; i < mesh.vertices.size; i++){
+                Vec3Array_Push(&VBO_data, mesh.vertices.array[i]);
+                Vec3Array_Push(&VBO_data, mesh.normals.array[i]);
         }
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*model.vertices.size*2, VBO_data.array, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3)*mesh.vertices.size*2, VBO_data.array, GL_STATIC_DRAW);
         free(VBO_data.array);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32)*model.faces.size*3, model.faces.array, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32)*mesh.faces.size*3, mesh.faces.array, GL_STATIC_DRAW);
         
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
@@ -299,18 +297,21 @@ GLuint renderer_create_VAO(const Model model){ // Create object from model
 }
 
 u32 renderer_create_sphere(){
-        Model sphere = {.faces = {0}, .vertices = {NULL}};
+        Mesh sphere = {.faces = {0}, .vertices = {NULL}};
 
-        model_create_sphere(&sphere);
+        mesh_create_sphere(&sphere);
 
         GLuint VAO = renderer_create_VAO(sphere);
 
         u32 ID = objectArray_push(VAO, sphere.faces.size*3);
 
-        model_free(&sphere); 
+        mesh_free(&sphere); 
         return ID;
 }
 
+u32 renderer_get_spherer(){
+        return 0;
+}
 
 void camera_print_coords(){
         printf("Pos: %.2f, %.2f, %.2f\n", camera_pos[0], camera_pos[1], camera_pos[2]);
@@ -319,8 +320,8 @@ void camera_print_coords(){
 }
 
 void render_text(const char* text, float x, float y, const float scale, const Color_RGBA color){
-        x = x*SCREEN_WIDTH;
-        y = y*SCREEN_HEIGHT;
+        x = ((x+1)/2)*SCREEN_WIDTH;
+        y = ((y+1)/2)*SCREEN_HEIGHT;
         glUseProgram(textShader);
 
         glUniform3f(textColor, color.R, color.G, color.B);
@@ -355,4 +356,7 @@ void render_text(const char* text, float x, float y, const float scale, const Co
         }
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D,0);
+}
+
+void renderer_draw_quad(float x1, float x2, float y1, float y2){
 }

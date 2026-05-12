@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <types.h>
-#include <model.h>
+#include <mesh.h>
 
 void renderer_init();
 void renderer_quit();
