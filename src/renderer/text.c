@@ -35,11 +35,11 @@ void CharMap_print(){
 }
 
 Character CharMap_Get(const char c){
-        for(int i = 0; i < Characters.size; i++){
-                if(Characters.charIndex[i] == c){
-                        return Characters.chars[i];
-                }
+        if(c >= Characters.size){
+                fprintf(stderr, "[ERROR] Character %c is not in the character map", c);
+                exit(0);
         }
+        return Characters.chars[c];
 }
 
 void text_init(){

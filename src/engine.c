@@ -232,7 +232,6 @@ void engine_draw(Engine engine){
         snprintf(buffer, 128, "FPS: %.f", 1/delta_time);
         render_text(buffer, 0.7f, 0.9f, 0.4f, color.orange);
 
-
         SDL_GL_SwapWindow(glWindow);
 }
 
