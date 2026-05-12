@@ -22,10 +22,6 @@ obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-gprof:
-	$(CC) $(CFLAGS) $(SOURCES) $(LIBS) -pg -o gprof.out
-	rm gmon.out
-
 release: CFLAGS = -std=c99 -Wall -Wextra -O3
 release: clean $(TARGET)
 
