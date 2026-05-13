@@ -1,11 +1,12 @@
 CC = clang
 CPPFLAGS = -I./include/  $(shell pkg-config --cflags freetype2)
 #CFLAGS = -std=c99 -Wall -Wextra -Werror -fsanitize=address
-CFLAGS = -std=c99 -Wall -Wextra -fsanitize=address
+CFLAGS = -std=c99 -Wall -Wextra -fsanitize=address -MMD -MP
 LIBS = -lSDL2 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm $(shell pkg-config --libs freetype2)
 
 SOURCES = $(shell find src -name "*.c")
 OBJECTS = $(SOURCES:src/%.c=obj/%.o)
+DEPS = $(OBJECTS:.o=.d)
 
 TARGET = saida.out
 
@@ -21,6 +22,8 @@ $(TARGET): $(OBJECTS)
 obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+-include $(DEPS)
 
 release: CFLAGS = -std=c99 -Wall -Wextra -O3
 release: clean $(TARGET)
