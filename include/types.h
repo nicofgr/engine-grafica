@@ -5,6 +5,7 @@
 #include <cglm/cglm.h>
 
 typedef uint32_t u32;
+typedef double vec3d[3];
 
 typedef struct Vec3_Array{
         vec3* array;
@@ -35,4 +36,26 @@ typedef struct String{
 } String;
 
 void Vec3Array_Push(Vec3_Array*, vec3);
+static inline void vec3d_copy(vec3d src, vec3d dest){
+        dest[0] = src[0];
+        dest[1] = src[1];
+        dest[2] = src[2];
+}
+static inline void vec3d_add(vec3d a, vec3d b, vec3d dest){
+        dest[0] = a[0] + b[0];
+        dest[1] = a[1] + b[1];
+        dest[2] = a[2] + b[2];
+}
+
+static inline void vec3d_sub(vec3d a, vec3d b, vec3d dest){
+        dest[0] = a[0] - b[0];
+        dest[1] = a[1] - b[1];
+        dest[2] = a[2] - b[2];
+}
+
+static inline void vec3d_to_vec3(vec3d src, vec3 dest){
+        dest[0] = src[0];
+        dest[1] = src[1];
+        dest[2] = src[2];
+}
 #endif

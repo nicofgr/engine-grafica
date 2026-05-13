@@ -13,10 +13,10 @@ typedef struct Engine{
 void engine_run(Engine);
 void engine_quit();
 
-u32  create_sphere(vec3 position,  float radius);
+u32  create_sphere(vec3d position,  float radius);
 void draw_object(u32 object);
-void move_object(u32 objectID, vec3 position);
-void position_update(u32 objectID, vec3 newPos);
+void move_object(u32 objectID, vec3d position);
+void position_update(u32 objectID, vec3d newPos);
 
 u32  create_material(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission);
 void change_material(u32 objectID, u32 materialID);

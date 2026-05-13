@@ -11,3 +11,5 @@ void Vec3Array_Push(Vec3_Array* vArr, vec3 v){
         glm_vec3_copy(v, vArr->array[index]);
         vArr->size++;
 }
+
+

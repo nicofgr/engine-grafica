@@ -12,9 +12,9 @@
 GLuint shaderProgram;
 GLuint textShader;
 
-vec3 camera_pos   = {0.0f, 0.0f,  200.0f};
-vec3 camera_front = {0.0f, 0.0f, -1.0f};
-vec3 camera_up    = {0.0f, 1.0f,  0.0f};
+vec3  camera_pos   = {0.0f, 0.0f,  200.0f};
+vec3  camera_front = {0.0f, 0.0f, -1.0f};
+vec3  camera_up    = {0.0f, 1.0f,  0.0f};
 
 float frustrumFar = 10e12;
 
@@ -249,6 +249,7 @@ void renderer_draw(){
 }
 
 void renderer_draw_GUI(){
+        glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glUseProgram(textShader);
@@ -293,7 +294,13 @@ void camera_print_coords(){
 }
 
 
-void renderer_draw_model(const u32 modelID, const vec3 position, const vec3 scale){
+void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
+
+        vec3 relativePos;
+        vec3 position;
+        vec3d_to_vec3(position_double, position);
+        glm_vec3_sub(position, camera_pos, position);
+
         Model model = modelArray_Get(modelID);
         Material material = materialArray_Get(model.materialID);
 

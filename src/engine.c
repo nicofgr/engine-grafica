@@ -12,9 +12,9 @@ int last_frame_time = 0;
 int lastTime = 0;
 
 typedef struct Object{  // Model, Position, Rotation, Scale
-        u32  modelID;
-        vec3 position;
-        vec3 scale;
+        u32   modelID;
+        vec3d position;
+        vec3  scale;
 }Object;
 
 typedef struct ObjectArray{
@@ -24,7 +24,7 @@ typedef struct ObjectArray{
 
 ObjectArray objectArray;
 
-u32 ObjectArray_Push(const u32 modelID, const vec3 position, const vec3 scale){
+u32 ObjectArray_Push(const u32 modelID, vec3d position, const vec3 scale){
         if(objectArray.size == 0){
                 objectArray.array = (Object*) malloc(sizeof(Object));
         }else{
@@ -33,8 +33,8 @@ u32 ObjectArray_Push(const u32 modelID, const vec3 position, const vec3 scale){
 
         u32 index = objectArray.size;
         objectArray.array[index].modelID = modelID;
-        glm_vec3_copy((float*)position, objectArray.array[index].position);
-        glm_vec3_copy((float*)scale, objectArray.array[index].scale);
+        vec3d_copy(position, objectArray.array[index].position);
+        glm_vec3_copy((float*)scale,    objectArray.array[index].scale);
 
         objectArray.size++;
         return index;
@@ -106,7 +106,7 @@ void change_material(u32 objectID, u32 materialID){
         renderer_change_material(object->modelID, materialID);
 }
 
-u32 create_sphere(vec3 position,  float radius){
+u32 create_sphere(vec3d position,  float radius){
 
         u32  modelID  = renderer_get_sphere();
         vec3 scale    = (vec3){radius, radius, radius};
@@ -120,13 +120,13 @@ void draw_object(u32 objectID){
         renderer_draw_model(object->modelID, object->position, object->scale);
 }
 
-void move_object(u32 objectID, vec3 displacement){
-        glm_vec3_add(displacement, objectArray.array[objectID].position, objectArray.array[objectID].position);
+void move_object(u32 objectID, vec3d displacement){
+        vec3d_add(displacement, objectArray.array[objectID].position, objectArray.array[objectID].position);
 }
 
 
-void position_update(u32 objectID, vec3 newPos){
-        glm_vec3_copy(newPos, objectArray.array[objectID].position);
+void position_update(u32 objectID, vec3d newPos){
+        vec3d_copy(newPos, objectArray.array[objectID].position);
 }
 
 void engine_init(Engine engine) {
