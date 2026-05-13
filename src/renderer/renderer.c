@@ -1,5 +1,6 @@
 #include "renderer/renderer.h"
 #include "cglm/cam.h"
+#include "cglm/vec3.h"
 #include "types.h"
 #include "mesh.h"
 #include "constants.h"
@@ -12,7 +13,7 @@
 GLuint shaderProgram;
 GLuint textShader;
 
-vec3  camera_pos   = {0.0f, 0.0f,  200.0f};
+vec3  camera_pos   = {0.0f, 0.0f,  400.0f};
 vec3  camera_front = {0.0f, 0.0f, -1.0f};
 vec3  camera_up    = {0.0f, 1.0f,  0.0f};
 
@@ -282,9 +283,12 @@ void camera_rotate(float x, float y){
         if(pitch < -89.9f)
                 pitch = -89.9f;
 }
+void camera_move_to_origin(){
+        glm_vec3_zero(camera_pos); 
+}
 
-float* camera_get_position(){
-        return camera_pos;
+void camera_copy_position(vec3 dest){
+        glm_vec3_copy(camera_pos, dest);
 }
 
 void camera_print_coords(){
@@ -296,10 +300,8 @@ void camera_print_coords(){
 
 void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
 
-        vec3 relativePos;
         vec3 position;
         vec3d_to_vec3(position_double, position);
-        glm_vec3_sub(position, camera_pos, position);
 
         Model model = modelArray_Get(modelID);
         Material material = materialArray_Get(model.materialID);

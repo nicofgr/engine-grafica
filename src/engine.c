@@ -129,6 +129,10 @@ void position_update(u32 objectID, vec3d newPos){
         vec3d_copy(newPos, objectArray.array[objectID].position);
 }
 
+void print_position(u32 objectID){
+        printf("(%.2f %.2f %.2f)\n", objectArray.array[objectID].position[0], objectArray.array[objectID].position[1], objectArray.array[objectID].position[2]);
+}
+
 void engine_init(Engine engine) {
         video_init();
         renderer_init();
@@ -203,8 +207,23 @@ void input(int * quit){
         }**/
 }
 
+void move_origin(vec3d newOrigin){
+        for(int i = 0; i < objectArray.size; i++){
+                vec3d_sub(objectArray.array[i].position, newOrigin, objectArray.array[i].position);
+        }
+        camera_move_to_origin();
+}
+
 float delta_time = 0;
 void engine_update(Engine engine){
+        vec3 camPosf;
+        camera_copy_position(camPosf);
+        float mag_squared = glm_vec3_norm2(camPosf);
+        if(mag_squared >= pow(10000,2)){
+                vec3d camPos;
+                vec3_to_vec3d(camPosf, camPos);
+                move_origin(camPos);
+        }
 
         int wait_time = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time);
         if(wait_time > 0 && wait_time <= FRAME_TARGET_TIME)
@@ -229,7 +248,8 @@ void engine_draw(Engine engine){
         renderer_draw();
         engine.draw();
 
-        float* cameraPos = camera_get_position();
+        vec3 cameraPos;
+        camera_copy_position(cameraPos);
         renderer_draw_GUI();
         char buffer[128];
         snprintf(buffer, 128, "Time:  %.2f sec", last_frame_time/1000.0f);
