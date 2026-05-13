@@ -12,9 +12,11 @@
 GLuint shaderProgram;
 GLuint textShader;
 
-vec3 camera_pos   = {0.0f, 0.0f,  7.0f};
+vec3 camera_pos   = {0.0f, 0.0f,  200.0f};
 vec3 camera_front = {0.0f, 0.0f, -1.0f};
 vec3 camera_up    = {0.0f, 1.0f,  0.0f};
+
+float frustrumFar = 10e12;
 
 float yaw = -90.0f;
 float pitch = 0.0f;
@@ -106,17 +108,18 @@ void compileShaders(){
 //int vertexLightLocation;
 //int lightPosLocation;
 int transformLocation;
-int viewPos;
 int viewLocation; 
 int projLocation;   
 int sizeMultiplier;
+GLint frustrumFarLoc;
+GLint nearResLoc;
 
+int viewPos;
 int ambientLoc;
 int diffuseLoc;
 int specularLoc;
 int shininessLoc;
 int emissionLoc;
-
 int lightPos;
 int lightAmbient;
 int lightDiffuse;
@@ -151,23 +154,30 @@ void setup_text(){
 void setup_shaders(){
         compileShaders();
         glUseProgram(shaderProgram);
+        // Vertex Shader
+        transformLocation = glGetUniformLocation(shaderProgram, "model");
+        viewLocation      = glGetUniformLocation(shaderProgram, "view");
+        projLocation      = glGetUniformLocation(shaderProgram, "projection");
+        sizeMultiplier    = glGetUniformLocation(shaderProgram, "sizeMultiplier");
+        frustrumFarLoc    = glGetUniformLocation(shaderProgram, "frustrumFar");
+        nearResLoc        = glGetUniformLocation(shaderProgram, "nearRes");
+
+        // Fragment Shader
+        viewPos       = glGetUniformLocation(shaderProgram, "viewPos");
+
         lightPos      = glGetUniformLocation(shaderProgram, "light.position");
         lightAmbient  = glGetUniformLocation(shaderProgram, "light.ambient");
         lightDiffuse  = glGetUniformLocation(shaderProgram, "light.diffuse");
         lightSpecular = glGetUniformLocation(shaderProgram, "light.specular");
 
-        transformLocation = glGetUniformLocation(shaderProgram, "model");
-        viewLocation      = glGetUniformLocation(shaderProgram, "view");
-        projLocation      = glGetUniformLocation(shaderProgram, "projection");
-        sizeMultiplier    = glGetUniformLocation(shaderProgram, "sizeMultiplier");
-        viewPos           = glGetUniformLocation(shaderProgram, "viewPos");
+        ambientLoc    = glGetUniformLocation(shaderProgram, "material.ambient");
+        diffuseLoc    = glGetUniformLocation(shaderProgram, "material.diffuse");
+        specularLoc   = glGetUniformLocation(shaderProgram, "material.specular");
+        shininessLoc  = glGetUniformLocation(shaderProgram, "material.shininess");
+        emissionLoc   = glGetUniformLocation(shaderProgram, "material.emission");
 
-        ambientLoc        = glGetUniformLocation(shaderProgram, "material.ambient");
-        diffuseLoc        = glGetUniformLocation(shaderProgram, "material.diffuse");
-        specularLoc       = glGetUniformLocation(shaderProgram, "material.specular");
-        shininessLoc      = glGetUniformLocation(shaderProgram, "material.shininess");
-        emissionLoc       = glGetUniformLocation(shaderProgram, "material.emission");
-
+        glUniform1f(frustrumFarLoc, frustrumFar);
+        glUniform1f(nearResLoc, 1);
         glUniform3f(lightPos, 0.0f, 0.0f, 0.0f);
         glUniform3f(lightAmbient, 0.2*color.star.R, 0.2*color.star.G, 0.2*color.star.B); // Light color
         glUniform3f(lightDiffuse, color.star.R, color.star.G, color.star.B); // Light color
@@ -217,6 +227,7 @@ void renderer_draw(){
         // NOT TRANSPARENT FIRST
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
 
         // TRANSPARENT OBJECTS
         glEnable(GL_BLEND);
@@ -244,6 +255,7 @@ void renderer_draw_GUI(){
         //render_text("test", 0.5f, 0.5f, 1.0f, color.orange);
 }
 
+// CAMERA 
 void camera_move(vec3 direction, const float speed){
 
         float x = direction[0]; 
@@ -270,9 +282,15 @@ void camera_rotate(float x, float y){
                 pitch = -89.9f;
 }
 
-vec3 translation = {0.0f, 0.0f, 0.0f};
-vec3 scale = {1.0f, 1.0f, 1.0f};
+float* camera_get_position(){
+        return camera_pos;
+}
 
+void camera_print_coords(){
+        printf("Pos: %.2f, %.2f, %.2f\n", camera_pos[0], camera_pos[1], camera_pos[2]);
+        printf("Fnt: %.2f, %.2f, %.2f\n", camera_front[0], camera_front[1], camera_front[2]);
+        printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
+}
 
 
 void renderer_draw_model(const u32 modelID, const vec3 position, const vec3 scale){
@@ -283,7 +301,7 @@ void renderer_draw_model(const u32 modelID, const vec3 position, const vec3 scal
         glm_mat4_identity(mesh);
         glm_translate(mesh, position);
         float rotate_speed = -1.0f/10.0; // frequency
-        glm_rotate(mesh, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
+        //glm_rotate(mesh, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
         glm_scale(mesh, scale);
 
         mat4 view;
@@ -300,7 +318,7 @@ void renderer_draw_model(const u32 modelID, const vec3 position, const vec3 scal
 
         mat4 proj;
         glm_mat4_identity(proj);
-        glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, 100.0f, proj);
+        glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, frustrumFar, proj);
 
 
         glUniform3f(ambientLoc, material.ambient.R, material.ambient.G, material.ambient.B);
@@ -389,11 +407,6 @@ u32 renderer_get_sphere(){
         return 0;
 }
 
-void camera_print_coords(){
-        printf("Pos: %.2f, %.2f, %.2f\n", camera_pos[0], camera_pos[1], camera_pos[2]);
-        printf("Fnt: %.2f, %.2f, %.2f\n", camera_front[0], camera_front[1], camera_front[2]);
-        printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
-}
 
 // TODO optimize text rendering
 void render_text(const char* text, float x, float y, const float scale, const Color_RGB color){

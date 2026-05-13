@@ -43,5 +43,6 @@ void main(){
 
         vec3 result = (ambient + diffuse + specular + material.emission);
         FragColor = vec4(result, 1.0);
+        //FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
 }
 

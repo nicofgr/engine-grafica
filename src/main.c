@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "constants.h"
+#include "types.h"
 
 u32 sun;
 u32 planet1;
@@ -8,11 +9,11 @@ u32 planet2;
 void init(){
         vec3 position = {0.0f, 0.0f, 0.0f};
 
-        sun     = create_sphere(position, 2.0f);
-        planet1 = create_sphere((vec3){5.0f, 0.0f, 0.0f}, 0.2f);
-        planet2 = create_sphere((vec3){10.0f, 0.0f, 0.0f}, 0.5f);
+        sun     = create_sphere(position, 100.0f);
+        planet1 = create_sphere((vec3){200.0f, 0.0f, 0.0f}, 2.0f);
+        planet2 = create_sphere((vec3){1000.0f, 0.0f, 0.0f}, 10.0f);
 
-        u32 glowingMat = create_material(color.star, color.star, color.star, 32, color.star);
+        u32 glowingMat = create_material(color.star, color.star, color.star, 32, (Color_RGB){50.0, 50.0, 50.0});
         change_material(sun, glowingMat);
 }
 

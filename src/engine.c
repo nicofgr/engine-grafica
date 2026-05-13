@@ -3,6 +3,7 @@
 #include "types.h"
 #include "constants.h"
 #include "renderer/renderer.h"
+#include <SDL2/SDL_video.h>
 
 SDL_Window*   glWindow = NULL;
 SDL_GLContext glContext = NULL;
@@ -72,7 +73,6 @@ void video_init(){
                 printf("Error creating GL context\n");
                 exit(1);
         }
-
 }
 
 
@@ -155,6 +155,14 @@ void input(int * quit){
                                                 SDL_GetRelativeMouseState(NULL, NULL);
                                         }
                                 }
+                                if(e.key.repeat == 0){
+                                        if(e.key.keysym.sym == SDLK_PERIOD){
+                                                speed *= 10;
+                                        }
+                                        else if(e.key.keysym.sym == SDLK_COMMA){
+                                                speed /= 10;
+                                        }
+                                }
                                 break;  
                 }
         }
@@ -221,14 +229,18 @@ void engine_draw(Engine engine){
         renderer_draw();
         engine.draw();
 
+        float* cameraPos = camera_get_position();
         renderer_draw_GUI();
         char buffer[128];
         snprintf(buffer, 128, "Time:  %.2f sec", last_frame_time/1000.0f);
         render_text(buffer, -0.95f, 0.9f, 0.4f, color.orange);
         snprintf(buffer, 128, "dt:    %.2f ms", delta_time*1000.0f);
         render_text(buffer, -0.95f, 0.8f, 0.4f, color.orange);
-        snprintf(buffer, 128, "Speed: %.2f m/s", speed);
+        snprintf(buffer, 128, "Speed: %.2f km/s", speed); // unit/s
         render_text(buffer, -0.95f, 0.7f, 0.4f, color.orange);
+        snprintf(buffer, 128, "Pos: %.2f %.2f %.2f km", cameraPos[0], cameraPos[1], cameraPos[2]);
+        render_text(buffer, -0.95f, 0.6f, 0.4f, color.orange);
+
         snprintf(buffer, 128, "FPS: %.f", 1/delta_time);
         render_text(buffer, 0.7f, 0.9f, 0.4f, color.orange);
 

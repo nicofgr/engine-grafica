@@ -12,6 +12,7 @@ void renderer_quit();
 void camera_move(vec3 direction, float speed);
 void camera_rotate(float, float);
 void camera_print_coords();
+float* camera_get_position();
 
 void renderer_draw_model(const u32 modelID, const vec3 position, const vec3 scale);
 u32  renderer_duplicate_model(u32 modelID);
