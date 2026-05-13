@@ -23,6 +23,7 @@ u32  renderer_get_sphere();
 void renderer_draw();
 void render_text(const char* text, float x, const float y, const float scale, const Color_RGB color);
 void renderer_draw_GUI();
+void renderer_draw_points();
 
 // Materials
 u32  renderer_create_material(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission);

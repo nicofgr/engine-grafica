@@ -12,12 +12,13 @@
 
 GLuint shaderProgram;
 GLuint textShader;
+GLuint pointShader;
 
-vec3  camera_pos   = {0.0f, 0.0f,  400.0f};
+vec3  camera_pos   = {149.6e6, 0.0f,  50000.0f};
 vec3  camera_front = {0.0f, 0.0f, -1.0f};
 vec3  camera_up    = {0.0f, 1.0f,  0.0f};
 
-float frustrumFar = 10e12;
+float frustrumFar = 1e12;
 
 float yaw = -90.0f;
 float pitch = 0.0f;
@@ -103,6 +104,7 @@ Material materialArray_Get(u32 materialID){
 void compileShaders(){
         shaderProgram = shCreateShaderProgram("shaders/simple_shader.vert", "shaders/simple_shader.frag");
         textShader    = shCreateShaderProgram("shaders/text.vert", "shaders/text.frag");
+        pointShader   = shCreateShaderProgram("shaders/point_shader.vert", "shaders/point_shader.frag");
 }
 
 
@@ -130,6 +132,13 @@ GLuint textVAO, textVBO;
 int textColor;
 int projection;
 
+GLuint pointVAO, pointVBO;
+GLint pointModelLoc;
+GLint pointViewLoc;
+GLint pointProjLoc;
+GLint pointSizeLoc;
+GLint pointColorLoc;
+
 void setup_text(){
         glUseProgram(textShader);
         text_init();
@@ -150,6 +159,23 @@ void setup_text(){
         glm_ortho(0.0f, SCREEN_WIDTH, 0.0f, SCREEN_HEIGHT, -1.0f, 1.0f, ortho);
         projection = glGetUniformLocation(textShader, "projection");
         glUniformMatrix4fv(projection, 1, GL_FALSE, (const float*) ortho );
+}
+
+void points_setup(){
+        glUseProgram(pointShader);
+
+        glGenVertexArrays(1, &pointVAO);
+        glGenBuffers(1, &pointVBO);
+
+        glBindVertexArray(pointVAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vec3), (vec3){0.0f, 0.0f, 0.0f}, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
 }
 
 void setup_shaders(){
@@ -184,15 +210,27 @@ void setup_shaders(){
         glUniform3f(lightDiffuse, color.star.R, color.star.G, color.star.B); // Light color
         glUniform3f(lightSpecular, 1.0f, 1.0f, 1.0f); // Light color
 
+        // POINT SHADER
+        glUseProgram(pointShader);
+        pointModelLoc = glGetUniformLocation(pointShader, "model");
+        pointViewLoc  = glGetUniformLocation(pointShader, "view");
+        pointProjLoc  = glGetUniformLocation(pointShader, "projection");
+        pointSizeLoc  = glGetUniformLocation(pointShader, "size");
+        pointColorLoc = glGetUniformLocation(pointShader, "pointColor");
+
+        glUniform1f(pointSizeLoc, 1.0f);
+        glUniform3f(pointColorLoc, color.red.R, color.red.G, color.red.B);
+
+        points_setup();
+
         modelArray.array = NULL;
         modelArray.size  = 0;
-
 }
 
 void renderer_init(){
         // GLAD
         if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
-                puts("glad was not initialized");
+                fprintf(stderr, "[ERROR] Glad was not initialized\n");
                 exit(1);
         }
 
@@ -257,6 +295,48 @@ void renderer_draw_GUI(){
         //render_text("test", 0.5f, 0.5f, 1.0f, color.orange);
 }
 
+void renderer_draw_point(){
+        puts("Drawing point");
+        vec3 position = {0.0f, 0.0f, 0.0f};
+
+        mat4 model;
+        glm_mat4_identity(model);
+        glm_translate(model, position);
+
+        mat4 view;
+        glm_mat4_identity(view);
+
+        vec3 target_dir;
+        vec3 direction;
+        direction[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
+        direction[1] = sin(glm_rad(pitch));
+        direction[2] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
+        glm_normalize_to(direction, camera_front);
+        glm_vec3_add(camera_pos, camera_front, target_dir);
+        glm_lookat(camera_pos, target_dir, camera_up, view);
+
+        mat4 proj;
+        glm_mat4_identity(proj);
+        glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, frustrumFar, proj);
+
+
+        //glUniform3f(viewPos, camera_pos[0], camera_pos[1], camera_pos[2]);
+        glUniformMatrix4fv(pointModelLoc, 1, GL_FALSE, (const float*)model);
+        glUniformMatrix4fv(pointViewLoc, 1, GL_FALSE, (const float*)view);
+        glUniformMatrix4fv(pointProjLoc, 1, GL_FALSE, (const float*)proj);
+        glUniform1f(pointSizeLoc, 10.0f);
+
+        glBindVertexArray(pointVAO);
+        glDrawArrays(GL_POINTS, 0, 1);
+        glBindVertexArray(0);
+}
+
+void renderer_draw_points(){
+        glUseProgram(pointShader);
+        glEnable(GL_PROGRAM_POINT_SIZE);
+        renderer_draw_point();
+}
+
 // CAMERA 
 void camera_move(vec3 direction, const float speed){
 
@@ -297,12 +377,19 @@ void camera_print_coords(){
         printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
 
-
 void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
-
         vec3 position;
         vec3d_to_vec3(position_double, position);
+        // IF FAR DO THIS 
+        float distance2 = glm_vec3_distance2(position, camera_pos);
+        float scale_med = (scale[0] + scale[1] + scale[2])/3;
+        float param = scale_med/distance2;
+        if(param <= 7e-12){
+                return;
+        }
+        //float hndc = (scale[0]*scale[0])/()
 
+        // IF CLOSE DO THIS
         Model model = modelArray_Get(modelID);
         Material material = materialArray_Get(model.materialID);
 
@@ -347,6 +434,7 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         glDrawElements(GL_TRIANGLES, model.nFaces, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 }
+
 
 u32 renderer_duplicate_model(u32 modelID){
         Model duplicate = modelArray_Get(modelID);

@@ -5,18 +5,27 @@
 u32 sun;
 u32 mercury;
 u32 venus;
+u32 earth;
+u32 mars;
+u32 jupiter;
+u32 saturn;
+u32 uranus;
+u32 neptune;
+u32 pluto;
 
 void init(){
         vec3d position = {0.0f, 0.0f, 0.0f};
 
-        /**
-        sun     = create_sphere(position, 695700.0f);
-        mercury = create_sphere((vec3d){350000.0f, 0.0f, 0.0f}, 2439.7f);
-        venus =   create_sphere((vec3d){360000.0f, 0.0f, 0.0f}, 6051.8f);
-        **/
-        sun     = create_sphere(position, 200.0f);
-        mercury = create_sphere((vec3d){400.0f, 0.0f, 0.0f}, 20.7f);
-        venus =   create_sphere((vec3d){600.0f, 0.0f, 0.0f}, 60.8f);
+        sun     = create_sphere(position,                        695700.0f);
+        mercury = create_sphere((vec3d){    57.9e6, 0.0f, 0.0f},   2439.7f);
+        venus   = create_sphere((vec3d){   108.0e6, 0.0f, 0.0f},   6051.8f);
+        earth   = create_sphere((vec3d){   149.6e6, 0.0f, 0.0f},   6371.8f);
+        mars    = create_sphere((vec3d){   228.0e6, 0.0f, 0.0f},   3389.5f);
+        jupiter = create_sphere((vec3d){   778.0e6, 0.0f, 0.0f},  69886.0f);
+        saturn  = create_sphere((vec3d){    1.43e9, 0.0f, 0.0f},  58232.0f);
+        uranus  = create_sphere((vec3d){    2.87e9, 0.0f, 0.0f},  25362.8f);
+        neptune = create_sphere((vec3d){     4.5e9, 0.0f, 0.0f},  24622.0f);
+        pluto   = create_sphere((vec3d){     5.9e9, 0.0f, 0.0f},   2376.6f);
 
         u32 glowingMat = create_material(color.star, color.star, color.star, 32, (Color_RGB){50.0, 50.0, 50.0});
         change_material(sun, glowingMat);
@@ -31,6 +40,13 @@ void draw(){
         draw_object(sun);
         draw_object(mercury);
         draw_object(venus);
+        draw_object(earth);
+        draw_object(mars);
+        draw_object(jupiter);
+        draw_object(saturn);
+        draw_object(uranus);
+        draw_object(neptune);
+        draw_object(pluto);
 }
 
 Engine engine = {

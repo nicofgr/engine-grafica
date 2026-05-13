@@ -64,5 +64,11 @@ static inline void vec3_to_vec3d(vec3 src, vec3d dest){
         dest[2] = src[2];
 }
 
+static inline void vec3d_zero(vec3d v){
+        v[0] = 0;
+        v[1] = 0;
+        v[2] = 0;
+}
+
 
 #endif

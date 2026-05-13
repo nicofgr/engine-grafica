@@ -10,6 +10,7 @@ SDL_GLContext glContext = NULL;
 
 int last_frame_time = 0;
 int lastTime = 0;
+vec3d original_origin;
 
 typedef struct Object{  // Model, Position, Rotation, Scale
         u32   modelID;
@@ -23,6 +24,7 @@ typedef struct ObjectArray{
 }ObjectArray;
 
 ObjectArray objectArray;
+
 
 u32 ObjectArray_Push(const u32 modelID, vec3d position, const vec3 scale){
         if(objectArray.size == 0){
@@ -134,6 +136,7 @@ void print_position(u32 objectID){
 }
 
 void engine_init(Engine engine) {
+        vec3d_zero(original_origin);
         video_init();
         renderer_init();
         engine.init();
@@ -208,6 +211,7 @@ void input(int * quit){
 }
 
 void move_origin(vec3d newOrigin){
+        vec3d_add(original_origin, newOrigin, original_origin);
         for(int i = 0; i < objectArray.size; i++){
                 vec3d_sub(objectArray.array[i].position, newOrigin, objectArray.array[i].position);
         }
@@ -248,8 +252,15 @@ void engine_draw(Engine engine){
         renderer_draw();
         engine.draw();
 
+        renderer_draw_points();
+
+        // GUI & TEXT
         vec3 cameraPos;
         camera_copy_position(cameraPos);
+        vec3 origOriginf;
+        vec3 distToOrigin;
+        vec3d_to_vec3(original_origin, origOriginf);
+        glm_vec3_add(origOriginf, cameraPos, distToOrigin);
         renderer_draw_GUI();
         char buffer[128];
         snprintf(buffer, 128, "Time:  %.2f sec", last_frame_time/1000.0f);
@@ -258,9 +269,9 @@ void engine_draw(Engine engine){
         render_text(buffer, -0.95f, 0.8f, 0.4f, color.orange);
         snprintf(buffer, 128, "Speed: %.2f km/s", speed); // unit/s
         render_text(buffer, -0.95f, 0.7f, 0.4f, color.orange);
-        snprintf(buffer, 128, "Pos: %.2f %.2f %.2f km", cameraPos[0], cameraPos[1], cameraPos[2]);
+        snprintf(buffer, 128, "Pos: %.2e %.2e %.2e km", distToOrigin[0], distToOrigin[1], distToOrigin[2]);
+        //snprintf(buffer, 128, "Pos: %.2f %.2f %.2f km", cameraPos[0], cameraPos[1], cameraPos[2]);
         render_text(buffer, -0.95f, 0.6f, 0.4f, color.orange);
-
         snprintf(buffer, 128, "FPS: %.f", 1/delta_time);
         render_text(buffer, 0.7f, 0.9f, 0.4f, color.orange);
 
