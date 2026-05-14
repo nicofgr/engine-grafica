@@ -7,6 +7,11 @@ out vec4 FragColor;
 uniform vec3 pointColor;
  
 void main(){
-        FragColor = vec4(pointColor, 1.0);
+        vec2 coord = gl_PointCoord - vec2(0.5);
+        float dist = length(coord);
+
+        float alpha = 1.0 - smoothstep(0.1, 0.5, dist);
+        FragColor = vec4(pointColor.xyz*alpha, alpha);
+        //FragColor = vec4(pointColor, 1.0);
 }
 

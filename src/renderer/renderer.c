@@ -227,6 +227,11 @@ void setup_shaders(){
         modelArray.size  = 0;
 }
 
+vec3 light_position = {0.0f, 0.0f, 0.0f};
+void renderer_update_light_position(vec3 position){
+        glm_vec3_copy(position, light_position);
+}
+
 void renderer_init(){
         // GLAD
         if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
@@ -295,10 +300,12 @@ void renderer_draw_GUI(){
         //render_text("test", 0.5f, 0.5f, 1.0f, color.orange);
 }
 
-void renderer_draw_point(){
-        puts("Drawing point");
-        vec3 position = {0.0f, 0.0f, 0.0f};
+void renderer_draw_point_setup(){
+        glUseProgram(pointShader);
+        glEnable(GL_PROGRAM_POINT_SIZE);
+}
 
+void renderer_draw_point(vec3 position, Color_RGB color, float size){
         mat4 model;
         glm_mat4_identity(model);
         glm_translate(model, position);
@@ -324,17 +331,12 @@ void renderer_draw_point(){
         glUniformMatrix4fv(pointModelLoc, 1, GL_FALSE, (const float*)model);
         glUniformMatrix4fv(pointViewLoc, 1, GL_FALSE, (const float*)view);
         glUniformMatrix4fv(pointProjLoc, 1, GL_FALSE, (const float*)proj);
-        glUniform1f(pointSizeLoc, 10.0f);
+        glUniform3f(pointColorLoc, color.R, color.G, color.B);
+        glUniform1f(pointSizeLoc, 20.0f);
 
         glBindVertexArray(pointVAO);
         glDrawArrays(GL_POINTS, 0, 1);
         glBindVertexArray(0);
-}
-
-void renderer_draw_points(){
-        glUseProgram(pointShader);
-        glEnable(GL_PROGRAM_POINT_SIZE);
-        renderer_draw_point();
 }
 
 // CAMERA 
@@ -380,18 +382,18 @@ void camera_print_coords(){
 void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         vec3 position;
         vec3d_to_vec3(position_double, position);
-        // IF FAR DO THIS 
-        float distance2 = glm_vec3_distance2(position, camera_pos);
-        float scale_med = (scale[0] + scale[1] + scale[2])/3;
-        float param = scale_med/distance2;
-        if(param <= 7e-12){
-                return;
-        }
-        //float hndc = (scale[0]*scale[0])/()
-
-        // IF CLOSE DO THIS
         Model model = modelArray_Get(modelID);
         Material material = materialArray_Get(model.materialID);
+
+        //renderer_draw_point_setup();
+        glUseProgram(pointShader);
+        renderer_draw_point(position, color.star, scale[0]*2);
+
+
+        // IF CLOSE DO THIS
+        //renderer_draw(); // TODO remove from here
+        glUseProgram(shaderProgram);
+
 
         mat4 mesh;
         glm_mat4_identity(mesh);
@@ -422,6 +424,7 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         glUniform3f(specularLoc, material.specular.R, material.specular.G, material.specular.B);
         glUniform1f(shininessLoc, material.shininess);
         glUniform3f(emissionLoc, material.emission.R, material.emission.G, material.emission.B);
+        glUniform3f(lightPos, light_position[0], light_position[1], light_position[2]);
 
         glUniform3f(viewPos, camera_pos[0], camera_pos[1], camera_pos[2]);
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, (const float*)mesh);

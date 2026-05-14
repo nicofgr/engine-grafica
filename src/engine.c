@@ -142,7 +142,7 @@ void engine_init(Engine engine) {
         engine.init();
 }
 
-float speed = 5; // m/s (actually u/s)
+float speed = 300000; // speed of light
 void input(int * quit){
         SDL_Event e;
         const Uint8* states = SDL_GetKeyboardState(NULL);
@@ -215,6 +215,10 @@ void move_origin(vec3d newOrigin){
         for(int i = 0; i < objectArray.size; i++){
                 vec3d_sub(objectArray.array[i].position, newOrigin, objectArray.array[i].position);
         }
+        vec3 newLightPos;
+        vec3d_to_vec3(objectArray.array[0].position, newLightPos);
+        renderer_update_light_position(newLightPos);
+
         camera_move_to_origin();
 }
 
@@ -252,8 +256,6 @@ void engine_draw(Engine engine){
         renderer_draw();
         engine.draw();
 
-        renderer_draw_points();
-
         // GUI & TEXT
         vec3 cameraPos;
         camera_copy_position(cameraPos);
@@ -276,6 +278,17 @@ void engine_draw(Engine engine){
         render_text(buffer, 0.7f, 0.9f, 0.4f, color.orange);
 
         SDL_GL_SwapWindow(glWindow);
+}
+
+void draw_point(vec3 position, Color_RGB color, float size){
+        renderer_draw_point(position, color, size);
+}
+
+void distant_objects_point(){
+        for(int i = 0; i < objectArray.size; i++){
+                renderer_draw_point(objectArray.array[i].position, color.red, 1.0f);
+
+        }
 }
 
 void engine_quit(){

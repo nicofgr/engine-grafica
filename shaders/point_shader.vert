@@ -14,12 +14,18 @@ uniform float size;
 // Res = log(C*Far + 1) / ((2^n - 1) * C/(C*x+1))
 
 void main(){
+        vec4 viewPos = view * model * vec4(aPos, 1.0);
+        
+        float distance = length(viewPos.xyz);
+
+        float nearRes = 1;
+        float frustrumFar = 1e12;
+
         FragPos = vec3(model * vec4(aPos, 1.0));
 
-        vec4 pos = projection * view * model * vec4(aPos, 1.0);
-        //pos.z = (2*log(nearRes*pos.w + 1) / log(nearRes*frustrumFar + 1) - 1) * pos.w;
+        vec4 pos = projection * viewPos;
+        pos.z = (2*log(nearRes*pos.w + 1) / log(nearRes*frustrumFar + 1) - 1) * pos.w;
         gl_Position = pos;
-        gl_PointSize = size;
-        //gl_Position = projection * view * model * vec4(aPos, 1.0);
+        gl_PointSize = clamp(size / distance, 2.0, 300.0);
 }
 

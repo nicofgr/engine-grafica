@@ -22,8 +22,8 @@ struct Light{
 };
 
 uniform Material material;
-uniform Light light;
-uniform vec3 viewPos;
+uniform Light    light;
+uniform vec3     viewPos;
  
 void main(){
         // Ambient
