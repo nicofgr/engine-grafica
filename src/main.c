@@ -1,5 +1,7 @@
+#include "cglm/vec3.h"
 #include "engine.h"
 #include "constants.h"
+#include "renderer/renderer.h"
 #include "types.h"
 
 u32 sun;
@@ -34,6 +36,17 @@ void init(){
 void update(){
         //position_update(mercury, (vec3){5*cos(2*last_frame_time/1000.0), 0.0f, 5*sin(2*last_frame_time/1000.0)});
         //position_update(venus, (vec3){10*cos(last_frame_time/1000.0), 0.0f, 10*sin(last_frame_time/1000.0)});
+        vec3 up;
+        vec3 camera_pos;
+        vec3 earth_pos;
+        vec3d earth_pos_d;
+        object_position_copy(3, earth_pos_d);
+        vec3d_to_vec3(earth_pos_d, earth_pos);
+
+        camera_position_get(camera_pos);
+        glm_vec3_sub(camera_pos, earth_pos, up);
+        glm_normalize(up);
+        //camera_change_up(up);
 }
 
 void draw(){

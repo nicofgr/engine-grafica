@@ -14,14 +14,17 @@ GLuint shaderProgram;
 GLuint textShader;
 GLuint pointShader;
 
-vec3  camera_pos   = {149.6e6, 0.0f,  50000.0f};
-vec3  camera_front = {0.0f, 0.0f, -1.0f};
+//vec3  camera_pos   = {149.6e6, 0.0f,  50000.0f};
+vec3  camera_pos   = {149.6e6, 10000.0f, 0.0f};
+vec3  camera_front = {-0.9f, -0.45f, 0.0f}; // TODO change camera front/up/right to a matrix
 vec3  camera_up    = {0.0f, 1.0f,  0.0f};
+versor qCamera;
 
 float frustrumFar = 1e12;
 
-float yaw = -90.0f;
-float pitch = 0.0f;
+float pitch =  -20.0f;
+float yaw   =  180.0f;
+float roll  =    0.0f;
 
 // MODEL
 typedef struct Model{ // Meshes, textures, materials, rig, shaders, uv mapping
@@ -259,6 +262,8 @@ void renderer_init(){
 
         // Standard material
         materialArray_push(color.red, color.red, color.red, 32.0f, color.black);
+
+        glm_quat_for(camera_front, camera_up, qCamera);
 }
 
 void renderer_quit(){
@@ -346,24 +351,37 @@ void camera_move(vec3 direction, const float speed){
         float y = direction[1]; 
         float z = direction[2]; 
 
+        vec3 cam_right;
+        glm_vec3_crossn(camera_front, camera_up, cam_right); // this gives the right vector
+
         vec3 aux;
-        glm_vec3_copy(camera_front, aux);
+        glm_vec3_crossn(camera_up, cam_right, aux);
         glm_vec3_muladds(aux, x*speed, camera_pos); //pos += (front*spd)
 
-        glm_vec3_crossn(camera_front, camera_up, aux);
-        glm_vec3_muladds(aux, y*speed, camera_pos);
+        glm_vec3_muladds(cam_right, y*speed, camera_pos);
 
         glm_vec3_muladds(camera_up, z*speed, camera_pos);
 }
 
-void camera_rotate(float x, float y){
-        const float sensitivity = 0.25;
-        yaw += x*sensitivity;
-        pitch -= y*sensitivity;
-        if(pitch > 89.9f)
-                pitch = 89.9f;
-        if(pitch < -89.9f)
-                pitch = -89.9f;
+void camera_rotate(int dx, int dy, float sensitivity){
+        yaw   = dx*sensitivity;
+        pitch = dy*sensitivity;
+
+        versor qYaw, qPitch;
+        glm_quatv(qYaw,    glm_rad(-yaw), camera_up);
+        glm_quatv(qPitch,  glm_rad(-pitch), (vec3){1.0f, 0.0f, 0.0f});
+
+        glm_quat_mul(   qYaw, qCamera, qCamera);
+        glm_quat_mul(qCamera,  qPitch, qCamera);
+
+        /**
+        versor alignment;
+        glm_quat_for(camera_up, camera_up, alignment);
+        glm_quat_mul(alignment, qCamera, qCamera);
+        **/
+        glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
+        //printf("dx: %.2f   dy: %.2f\n", yaw, pitch);
+        //printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
 }
 void camera_move_to_origin(){
         glm_vec3_zero(camera_pos); 
@@ -371,6 +389,11 @@ void camera_move_to_origin(){
 
 void camera_copy_position(vec3 dest){
         glm_vec3_copy(camera_pos, dest);
+}
+
+void camera_change_up(vec3 direction){
+        glm_vec3(direction, camera_up);
+        glm_normalize(camera_up);
 }
 
 void camera_print_coords(){
@@ -386,8 +409,8 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         Material material = materialArray_Get(model.materialID);
 
         //renderer_draw_point_setup();
-        glUseProgram(pointShader);
-        renderer_draw_point(position, color.star, scale[0]*2);
+        //glUseProgram(pointShader);
+        //renderer_draw_point(position, color.star, scale[0]*2);
 
 
         // IF CLOSE DO THIS
@@ -395,6 +418,7 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         glUseProgram(shaderProgram);
 
 
+        // MODEL MATRIX
         mat4 mesh;
         glm_mat4_identity(mesh);
         glm_translate(mesh, position);
@@ -402,18 +426,14 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         //glm_rotate(mesh, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
         glm_scale(mesh, scale);
 
+
+        // VIEW MATRIX
         mat4 view;
         glm_mat4_identity(view);
+        glm_quat_look(camera_pos, qCamera, view);
 
-        vec3 target_dir;
-        vec3 direction;
-        direction[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
-        direction[1] = sin(glm_rad(pitch));
-        direction[2] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
-        glm_normalize_to(direction, camera_front);
-        glm_vec3_add(camera_pos, camera_front, target_dir);
-        glm_lookat(camera_pos, target_dir, camera_up, view);
 
+        // PROJECTION MATRIX
         mat4 proj;
         glm_mat4_identity(proj);
         glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, frustrumFar, proj);
@@ -497,7 +517,7 @@ u32 renderer_create_model(Mesh mesh, u32 materialID){
 
 u32 renderer_create_sphere(){
         Mesh sphere = {.faces = {0}, .vertices = {NULL}};
-        mesh_create_sphere(&sphere);
+        mesh_create_sphere(&sphere,4);
         u32 modelID = renderer_create_model(sphere, 0);
         mesh_free(&sphere); 
         return modelID;

@@ -8,7 +8,7 @@ typedef struct Mesh{ // Verts, Edges, Faces, Normals, Vert colors
         u32_Array  faces;
 }Mesh;
 
-void mesh_create_sphere(Mesh* mesh);
+void mesh_create_sphere(Mesh* mesh, u32 nSubdiv);
 void mesh_free(Mesh* mesh);
 void mesh_printData(const Mesh mesh);
 

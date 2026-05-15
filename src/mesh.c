@@ -200,12 +200,12 @@ void mesh_subdivide(Mesh* mesh){
         mesh_subdivideFace(mesh, 0);
 }
 
-void mesh_create_sphere(Mesh* mesh){
+void mesh_create_sphere(Mesh* mesh, u32 nSubdiv){
         mesh_clear(mesh);
         mesh_create_icosahedron(mesh);
-        mesh_subdivide(mesh);
-        mesh_subdivide(mesh);
-        mesh_subdivide(mesh);
+        for(int i = 0; i < nSubdiv; i++){
+                mesh_subdivide(mesh);
+        }
         for(int i = 0; i < mesh->vertices.size; i++){
                 glm_vec3_normalize(mesh->vertices.array[i]);
                 glm_vec3_copy(mesh->vertices.array[i], mesh->normals.array[i]);

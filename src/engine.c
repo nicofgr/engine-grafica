@@ -135,6 +135,14 @@ void print_position(u32 objectID){
         printf("(%.2f %.2f %.2f)\n", objectArray.array[objectID].position[0], objectArray.array[objectID].position[1], objectArray.array[objectID].position[2]);
 }
 
+void camera_position_get(vec3 dest){
+        camera_copy_position(dest);
+}
+
+void object_position_copy(u32 objectID, vec3d dest){
+        vec3d_copy(objectArray.array[objectID].position, dest);
+}
+
 void engine_init(Engine engine) {
         vec3d_zero(original_origin);
         video_init();
@@ -142,7 +150,7 @@ void engine_init(Engine engine) {
         engine.init();
 }
 
-float speed = 300000; // speed of light
+float speed = 30000; // speed of light/10
 void input(int * quit){
         SDL_Event e;
         const Uint8* states = SDL_GetKeyboardState(NULL);
@@ -197,17 +205,11 @@ void input(int * quit){
         glm_normalize(direction);
         camera_move(direction, speed * delta_time);
 
-        int x = 0, y = 0;
+        int dx = 0, dy = 0;
         if(SDL_GetRelativeMouseMode() == SDL_TRUE)
-                SDL_GetRelativeMouseState(&x, &y);
+                SDL_GetRelativeMouseState(&dx, &dy);
 
-        camera_rotate(x, y);
-
-        /**
-        if(0){  // for debugging
-                printf("%d, %d\n", x, y);
-                camera_print_coords();
-        }**/
+        camera_rotate(dx, dy, 0.2);
 }
 
 void move_origin(vec3d newOrigin){
@@ -227,7 +229,7 @@ void engine_update(Engine engine){
         vec3 camPosf;
         camera_copy_position(camPosf);
         float mag_squared = glm_vec3_norm2(camPosf);
-        if(mag_squared >= pow(10000,2)){
+        if(mag_squared >= pow(10000,2)){ // if dist > 10000km
                 vec3d camPos;
                 vec3_to_vec3d(camPosf, camPos);
                 move_origin(camPos);
