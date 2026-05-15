@@ -314,17 +314,7 @@ void renderer_draw_point(vec3 position, Color_RGB color, float size){
 
         mat4 view;
         glm_mat4_identity(view);
-
-        /**
-        vec3 direction;
-        direction[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
-        direction[1] = sin(glm_rad(pitch));
-        direction[2] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
-        glm_normalize_to(direction, camera_front);
-        **/
-        vec3 target_dir;
-        glm_vec3_add(camera_pos, camera_front, target_dir);
-        glm_lookat(camera_pos, target_dir, camera_up, view);
+        glm_quat_look(camera_pos, qCamera, view);
 
         mat4 proj;
         glm_mat4_identity(proj);
@@ -396,11 +386,13 @@ void camera_rotate(int dx, int dy, float sensitivity){
         glm_quat_normalize(qCamera);
 
         glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
+        /**
         printf("Local  up here is: (%.2f %.2f %.2f)\n", local_up[0], local_up[1], local_up[2]);
-        printf("Global up here is: (%.2f %.2f %.2f)\n\n", camera_up[0], camera_up[1], camera_up[2]);
-        //printf("dx: %.2f   dy: %.2f\n", yaw, pitch);
+        printf("Global up here is: (%.2f %.2f %.2f)\n", camera_up[0], camera_up[1], camera_up[2]);
+        printf("dx: %.2f   dy: %.2f\n", yaw, pitch);
         printf("y: %.2f\n", cumulativePitch);
-        //printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
+        printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
+        **/
 }
 void camera_move_to_origin(){
         glm_vec3_zero(camera_pos); 
@@ -428,8 +420,8 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         Material material = materialArray_Get(model.materialID);
 
         //renderer_draw_point_setup();
-        //glUseProgram(pointShader);
-        //renderer_draw_point(position, color.star, scale[0]*2);
+        glUseProgram(pointShader);
+        renderer_draw_point(position, color.star, scale[0]*2);
 
 
         // IF CLOSE DO THIS
