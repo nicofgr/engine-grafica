@@ -1,5 +1,6 @@
 #include "renderer/renderer.h"
 #include "cglm/cam.h"
+#include "cglm/quat.h"
 #include "cglm/vec3.h"
 #include "types.h"
 #include "mesh.h"
@@ -103,8 +104,8 @@ Material materialArray_Get(u32 materialID){
 
 void compileShaders(){
         shaderProgram = shCreateShaderProgram("shaders/simple_shader.vert", "shaders/simple_shader.frag");
-        textShader    = shCreateShaderProgram("shaders/text.vert", "shaders/text.frag");
-        pointShader   = shCreateShaderProgram("shaders/point_shader.vert", "shaders/point_shader.frag");
+        textShader    = shCreateShaderProgram(         "shaders/text.vert",          "shaders/text.frag");
+        pointShader   = shCreateShaderProgram( "shaders/point_shader.vert",  "shaders/point_shader.frag");
 }
 
 
@@ -260,7 +261,7 @@ void renderer_init(){
         // Standard material
         materialArray_push(color.red, color.red, color.red, 32.0f, color.black);
 
-        glm_quat_for(camera_front, camera_up, qCamera);
+        glm_quat_for((vec3){-1.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f}, qCamera);
 }
 
 void renderer_quit(){
@@ -347,7 +348,6 @@ void camera_move(vec3 direction, const float speed){
         glm_vec3_crossn(camera_up, cam_right, aux);
         glm_vec3_muladds(aux, x*speed, camera_pos); //pos += (front*spd)
                                                     // TODO: Need to update the camera UP
-
         glm_vec3_muladds(cam_right, y*speed, camera_pos);
 
         glm_vec3_muladds(camera_up, z*speed, camera_pos);
@@ -358,7 +358,6 @@ void camera_rotate(int dx, int dy, float sensitivity){
         float dYaw   = dx*sensitivity;
         float dPitch = dy*sensitivity;
         cumulativePitch += dPitch;
-        /**
         if(cumulativePitch < -89.9){
                 dPitch = 0;
                 cumulativePitch = -89.9;
@@ -366,45 +365,63 @@ void camera_rotate(int dx, int dy, float sensitivity){
         if(cumulativePitch > 89.9){
                 dPitch = 0;
                 cumulativePitch = 89.9;
-        }**/
-
+        }
 
         vec3 local_up;
         glm_quat_rotatev(qCamera, (vec3){0.0f, 1.0f, 0.0f}, local_up);  // Get up from the camera
-        glm_quat_for(camera_front, camera_up, qCamera);                 // Update qCamera up to align with planet normal (camera_up) TODO: find better way to do this without using camera_front;
-
+        
+        vec3 local_right;
+        glm_vec3_crossn(camera_front, local_up, local_right);
+        glm_normalize(local_right);
 
         versor qYaw, qPitch;
-        glm_quatv(qYaw,    glm_rad(-dYaw), camera_up);
-        glm_quatv(qPitch,  glm_rad(-dPitch), (vec3){1.0f, 0.0f, 0.0f});
+        glm_quatv(qYaw,    glm_rad(-dYaw), camera_up);  // For now camera_up = planet_normal
+        //glm_quatv(qPitch,  glm_rad(-dPitch), (vec3){1.0f, 0.0f, 0.0f});
+        glm_quatv(qPitch,  glm_rad(-dPitch), local_right);
 
-        glm_quat_mul(   qYaw, qCamera, qCamera);
-        glm_quat_mul( qCamera,  qPitch, qCamera);
-         
+        glm_quat_mul(    qYaw, qCamera, qCamera);
+        glm_quat_mul(  qPitch, qCamera, qCamera);
+        //glm_quat_mul( qCamera,  qPitch, qCamera);
 
 
         glm_quat_normalize(qCamera);
 
         glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
-        /**
-        printf("Local  up here is: (%.2f %.2f %.2f)\n", local_up[0], local_up[1], local_up[2]);
-        printf("Global up here is: (%.2f %.2f %.2f)\n", camera_up[0], camera_up[1], camera_up[2]);
-        printf("dx: %.2f   dy: %.2f\n", yaw, pitch);
+
+        printf("Camera up here is: (%.2f %.2f %.2f)\n",  local_up[0], local_up[1], local_up[2]);
+        printf("Planet up here is: (%.2f %.2f %.2f)\n", camera_up[0], camera_up[1], camera_up[2]);
+        printf("dx: %.2f   dy: %.2f\n", dYaw, dPitch);
         printf("y: %.2f\n", cumulativePitch);
         printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
-        **/
 }
+
+void camera_change_up(vec3 direction){
+        glm_normalize(direction);
+
+        vec3 old_up;
+        glm_vec3_copy(camera_up, old_up);
+        
+        vec3 new_up;
+        glm_vec3_copy(direction, new_up);
+
+        versor q_align;
+        glm_quat_from_vecs(old_up, new_up, q_align);
+
+        glm_quat_mul(q_align, qCamera, qCamera);
+        glm_quat_normalize(qCamera);
+
+        glm_vec3_copy(direction, camera_up);
+        glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
+        printf("Old up: (%f %f %f)\n",   old_up[0], old_up[1], old_up[2]);
+        printf("New up: (%f %f %f)\n\n", new_up[0], new_up[1], new_up[2]);
+}
+
 void camera_move_to_origin(){
         glm_vec3_zero(camera_pos); 
 }
 
 void camera_copy_position(vec3 dest){
         glm_vec3_copy(camera_pos, dest);
-}
-
-void camera_change_up(vec3 direction){
-        glm_vec3(direction, camera_up);
-        glm_normalize(camera_up);
 }
 
 void camera_print_coords(){
@@ -420,8 +437,8 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         Material material = materialArray_Get(model.materialID);
 
         //renderer_draw_point_setup();
-        glUseProgram(pointShader);
-        renderer_draw_point(position, color.star, scale[0]*2);
+        //glUseProgram(pointShader);
+        //renderer_draw_point(position, color.star, scale[0]*2);
 
 
         // IF CLOSE DO THIS

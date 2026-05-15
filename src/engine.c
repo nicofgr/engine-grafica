@@ -9,6 +9,7 @@ SDL_Window*   glWindow = NULL;
 SDL_GLContext glContext = NULL;
 
 int last_frame_time = 0;
+int last_physics_time = 0;
 int lastTime = 0;
 vec3d original_origin;
 float speed = 300000/100.0; // speed of light/10
@@ -182,8 +183,14 @@ void input(int * quit){
                 }
         }
 
-        vec3 direction = {0.0f, 0.0f, 0.0f};
+        // MOUSE
+        int dx = 0, dy = 0;
+        if(SDL_GetRelativeMouseMode() == SDL_TRUE)
+                SDL_GetRelativeMouseState(&dx, &dy);
+        camera_rotate(dx, dy, 0.2);
 
+        // MOVEMENT
+        vec3 direction = {0.0f, 0.0f, 0.0f};
         if(states[SDL_SCANCODE_W]){
                 direction[0] += 1.0f; 
         }
@@ -205,11 +212,6 @@ void input(int * quit){
         glm_normalize(direction);
         camera_move(direction, speed * delta_time);
 
-        int dx = 0, dy = 0;
-        if(SDL_GetRelativeMouseMode() == SDL_TRUE)
-                SDL_GetRelativeMouseState(&dx, &dy);
-
-        camera_rotate(dx, dy, 0.2);
 }
 
 void move_origin(vec3d newOrigin){
@@ -224,8 +226,28 @@ void move_origin(vec3d newOrigin){
         camera_move_to_origin();
 }
 
+float phys_delta_time = 0;
+void fixed_update(Engine engine){
+        /**
+        int wait_time = PPS_TARGET_TIME - (SDL_GetTicks() - last_physics_time);
+        if(wait_time > 0 && wait_time <= PPS_TARGET_TIME)
+                return;
+        phys_delta_time = (SDL_GetTicks() - last_physics_time) / 1000.0f;
+        last_physics_time = SDL_GetTicks();
+        **/
+
+}
+
 float delta_time = 0;
-void engine_update(Engine engine){
+void engine_update(Engine engine){ // TODO fix timestep
+        int wait_time = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time); 
+        if(wait_time > 0 && wait_time <= FRAME_TARGET_TIME){
+                SDL_Delay(wait_time);
+        }
+
+        delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
+        last_frame_time = SDL_GetTicks();
+
         vec3 camPosf;
         camera_copy_position(camPosf);
         float mag_squared = glm_vec3_norm2(camPosf);
@@ -234,13 +256,6 @@ void engine_update(Engine engine){
                 vec3_to_vec3d(camPosf, camPos);
                 move_origin(camPos);
         }
-
-        int wait_time = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time);
-        if(wait_time > 0 && wait_time <= FRAME_TARGET_TIME)
-                SDL_Delay(wait_time);
-
-        delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
-        last_frame_time = SDL_GetTicks();
 
         engine.update();
         /**
@@ -252,7 +267,6 @@ void engine_update(Engine engine){
         }
         **/
 }
-
 
 void engine_draw(Engine engine){
         renderer_draw();
@@ -278,6 +292,8 @@ void engine_draw(Engine engine){
         render_text(buffer, -0.95f, 0.6f, 0.4f, color.orange);
         snprintf(buffer, 128, "FPS: %.f", 1/delta_time);
         render_text(buffer, 0.7f, 0.9f, 0.4f, color.orange);
+        snprintf(buffer, 128, "PPS: %.f", 1/phys_delta_time);
+        render_text(buffer, 0.7f, 0.8f, 0.4f, color.orange);
 
         SDL_GL_SwapWindow(glWindow);
 }
@@ -309,6 +325,7 @@ void engine_run(Engine engine){
 
         while(quit == FALSE){
                 input(&quit);
+                fixed_update(engine);
                 engine_update(engine);
                 engine_draw(engine);
                 //quit = TRUE;
