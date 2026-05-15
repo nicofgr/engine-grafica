@@ -11,6 +11,7 @@ SDL_GLContext glContext = NULL;
 int last_frame_time = 0;
 int lastTime = 0;
 vec3d original_origin;
+float speed = 300000/100.0; // speed of light/10
 
 typedef struct Object{  // Model, Position, Rotation, Scale
         u32   modelID;
@@ -150,7 +151,6 @@ void engine_init(Engine engine) {
         engine.init();
 }
 
-float speed = 30000; // speed of light/10
 void input(int * quit){
         SDL_Event e;
         const Uint8* states = SDL_GetKeyboardState(NULL);

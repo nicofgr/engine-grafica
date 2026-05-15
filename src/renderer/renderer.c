@@ -15,16 +15,13 @@ GLuint textShader;
 GLuint pointShader;
 
 //vec3  camera_pos   = {149.6e6, 0.0f,  50000.0f};
-vec3  camera_pos   = {149.6e6, 10000.0f, 0.0f};
-vec3  camera_front = {-0.9f, -0.45f, 0.0f}; // TODO change camera front/up/right to a matrix
+vec3  camera_pos   = {149.6e6, 6840.0f, 0.2f};
+vec3  camera_front = {-1.0f, 0.0f, 0.0f}; // TODO change camera front/up/right to a matrix
 vec3  camera_up    = {0.0f, 1.0f,  0.0f};
 versor qCamera;
 
+float frustrumNear = 0.1;
 float frustrumFar = 1e12;
-
-float pitch =  -20.0f;
-float yaw   =  180.0f;
-float roll  =    0.0f;
 
 // MODEL
 typedef struct Model{ // Meshes, textures, materials, rig, shaders, uv mapping
@@ -318,12 +315,14 @@ void renderer_draw_point(vec3 position, Color_RGB color, float size){
         mat4 view;
         glm_mat4_identity(view);
 
-        vec3 target_dir;
+        /**
         vec3 direction;
         direction[0] = cos(glm_rad(yaw)) * cos(glm_rad(pitch));
         direction[1] = sin(glm_rad(pitch));
         direction[2] = sin(glm_rad(yaw)) * cos(glm_rad(pitch));
         glm_normalize_to(direction, camera_front);
+        **/
+        vec3 target_dir;
         glm_vec3_add(camera_pos, camera_front, target_dir);
         glm_lookat(camera_pos, target_dir, camera_up, view);
 
@@ -357,30 +356,50 @@ void camera_move(vec3 direction, const float speed){
         vec3 aux;
         glm_vec3_crossn(camera_up, cam_right, aux);
         glm_vec3_muladds(aux, x*speed, camera_pos); //pos += (front*spd)
+                                                    // TODO: Need to update the camera UP
 
         glm_vec3_muladds(cam_right, y*speed, camera_pos);
 
         glm_vec3_muladds(camera_up, z*speed, camera_pos);
 }
 
+float cumulativePitch = 0;
 void camera_rotate(int dx, int dy, float sensitivity){
-        yaw   = dx*sensitivity;
-        pitch = dy*sensitivity;
+        float dYaw   = dx*sensitivity;
+        float dPitch = dy*sensitivity;
+        cumulativePitch += dPitch;
+        /**
+        if(cumulativePitch < -89.9){
+                dPitch = 0;
+                cumulativePitch = -89.9;
+        }
+        if(cumulativePitch > 89.9){
+                dPitch = 0;
+                cumulativePitch = 89.9;
+        }**/
+
+
+        vec3 local_up;
+        glm_quat_rotatev(qCamera, (vec3){0.0f, 1.0f, 0.0f}, local_up);  // Get up from the camera
+        glm_quat_for(camera_front, camera_up, qCamera);                 // Update qCamera up to align with planet normal (camera_up) TODO: find better way to do this without using camera_front;
+
 
         versor qYaw, qPitch;
-        glm_quatv(qYaw,    glm_rad(-yaw), camera_up);
-        glm_quatv(qPitch,  glm_rad(-pitch), (vec3){1.0f, 0.0f, 0.0f});
+        glm_quatv(qYaw,    glm_rad(-dYaw), camera_up);
+        glm_quatv(qPitch,  glm_rad(-dPitch), (vec3){1.0f, 0.0f, 0.0f});
 
         glm_quat_mul(   qYaw, qCamera, qCamera);
-        glm_quat_mul(qCamera,  qPitch, qCamera);
+        glm_quat_mul( qCamera,  qPitch, qCamera);
+         
 
-        /**
-        versor alignment;
-        glm_quat_for(camera_up, camera_up, alignment);
-        glm_quat_mul(alignment, qCamera, qCamera);
-        **/
+
+        glm_quat_normalize(qCamera);
+
         glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
+        printf("Local  up here is: (%.2f %.2f %.2f)\n", local_up[0], local_up[1], local_up[2]);
+        printf("Global up here is: (%.2f %.2f %.2f)\n\n", camera_up[0], camera_up[1], camera_up[2]);
         //printf("dx: %.2f   dy: %.2f\n", yaw, pitch);
+        printf("y: %.2f\n", cumulativePitch);
         //printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
 }
 void camera_move_to_origin(){
@@ -436,7 +455,7 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         // PROJECTION MATRIX
         mat4 proj;
         glm_mat4_identity(proj);
-        glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, 0.1f, frustrumFar, proj);
+        glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, frustrumNear, frustrumFar, proj);
 
 
         glUniform3f(ambientLoc, material.ambient.R, material.ambient.G, material.ambient.B);
