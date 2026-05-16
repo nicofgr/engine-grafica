@@ -17,8 +17,7 @@ GLuint pointShader;
 
 //vec3  camera_pos   = {149.6e6, 0.0f,  50000.0f};
 vec3  camera_pos   = {149.6e6, 6840.0f, 0.2f};
-vec3  camera_front = {-1.0f, 0.0f, 0.0f}; // TODO change camera front/up/right to a matrix
-vec3  camera_up    = {0.0f, 1.0f,  0.0f};
+vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
 
 float frustrumNear = 0.1;
@@ -341,79 +340,83 @@ void camera_move(vec3 direction, const float speed){
         float y = direction[1]; 
         float z = direction[2]; 
 
-        vec3 cam_right;
-        glm_vec3_crossn(camera_front, camera_up, cam_right); // this gives the right vector
+
+        vec3 camera_front;
+        glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
+
+        vec3 camera_right;
+        glm_quat_rotatev(qCamera, (vec3){1.0f, 0.0f, 0.0f}, camera_right);
 
         vec3 aux;
-        glm_vec3_crossn(camera_up, cam_right, aux);
+        glm_vec3_crossn(gravity_up, camera_right, aux);
         glm_vec3_muladds(aux, x*speed, camera_pos); //pos += (front*spd)
                                                     // TODO: Need to update the camera UP
-        glm_vec3_muladds(cam_right, y*speed, camera_pos);
+        glm_vec3_muladds(camera_right, y*speed, camera_pos);
 
-        glm_vec3_muladds(camera_up, z*speed, camera_pos);
+        glm_vec3_muladds(gravity_up, z*speed, camera_pos);
+
+        printf("Movement direction: %.2f %.2f %.2f", x, y, z);
 }
 
-float cumulativePitch = 0;
-void camera_rotate(int dx, int dy, float sensitivity){
+float yaw = -90;
+float pitch = 0;
+void camera_rotate(int dx, int dy, float sensitivity){ // TODO: Fix Loxodrome Spiraling and Collinear Vector Singularity
         float dYaw   = dx*sensitivity;
         float dPitch = dy*sensitivity;
-        cumulativePitch += dPitch;
-        if(cumulativePitch < -89.9){
-                dPitch = 0;
-                cumulativePitch = -89.9;
+
+        yaw   += dYaw;
+        pitch += dPitch;
+
+        if(pitch < -89.9){
+                pitch  = -89.9;
         }
-        if(cumulativePitch > 89.9){
-                dPitch = 0;
-                cumulativePitch = 89.9;
+        if(pitch > 89.9){
+                pitch  = 89.9;
         }
 
-        vec3 local_up;
-        glm_quat_rotatev(qCamera, (vec3){0.0f, 1.0f, 0.0f}, local_up);  // Get up from the camera
-        
-        vec3 local_right;
-        glm_vec3_crossn(camera_front, local_up, local_right);
-        glm_normalize(local_right);
+        versor qBase;
+        glm_quat_from_vecs((vec3){0.0f, 1.0f, 0.0f}, gravity_up, qBase);
 
         versor qYaw, qPitch;
-        glm_quatv(qYaw,    glm_rad(-dYaw), camera_up);  // For now camera_up = planet_normal
-        //glm_quatv(qPitch,  glm_rad(-dPitch), (vec3){1.0f, 0.0f, 0.0f});
-        glm_quatv(qPitch,  glm_rad(-dPitch), local_right);
+        glm_quatv(   qYaw,   glm_rad(-yaw), gravity_up);
+        glm_quatv( qPitch, glm_rad(-pitch), (vec3){1.0f, 0.0f, 0.0f});
 
-        glm_quat_mul(    qYaw, qCamera, qCamera);
-        glm_quat_mul(  qPitch, qCamera, qCamera);
-        //glm_quat_mul( qCamera,  qPitch, qCamera);
-
+        glm_quat_mul( qYaw,  qBase,   qBase);
+        glm_quat_mul(qBase, qPitch, qCamera);
 
         glm_quat_normalize(qCamera);
 
+        vec3 camera_front;
         glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
 
-        printf("Camera up here is: (%.2f %.2f %.2f)\n",  local_up[0], local_up[1], local_up[2]);
-        printf("Planet up here is: (%.2f %.2f %.2f)\n", camera_up[0], camera_up[1], camera_up[2]);
+        //printf("Camera up here is: (%.2f %.2f %.2f)\n",  local_up[0], local_up[1], local_up[2]);
+        printf("Planet up here is: (%.2f %.2f %.2f)\n", gravity_up[0], gravity_up[1], gravity_up[2]);
         printf("dx: %.2f   dy: %.2f\n", dYaw, dPitch);
-        printf("y: %.2f\n", cumulativePitch);
+        printf("yaw: %.2f   pitch: %.2f\n", yaw, pitch);
         printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
 }
 
 void camera_change_up(vec3 direction){
         glm_normalize(direction);
+        glm_vec3_copy(direction, gravity_up);
 
-        vec3 old_up;
-        glm_vec3_copy(camera_up, old_up);
-        
-        vec3 new_up;
-        glm_vec3_copy(direction, new_up);
+        versor qBase;
+        glm_quat_from_vecs((vec3){0.0f, 1.0f, 0.0f}, gravity_up, qBase);
 
-        versor q_align;
-        glm_quat_from_vecs(old_up, new_up, q_align);
+        versor qYaw, qPitch;
+        //glm_quatv(   qYaw,   glm_rad(-yaw), gravity_up);
+        glm_quatv(   qYaw,   glm_rad(-yaw), (vec3){0.0f, 1.0f, 0.0f});
+        glm_quatv( qPitch, glm_rad(-pitch), (vec3){1.0f, 0.0f, 0.0f});
 
-        glm_quat_mul(q_align, qCamera, qCamera);
-        glm_quat_normalize(qCamera);
+        glm_quat_mul(qBase, qYaw,   qBase);
+        //glm_quat_mul( qYaw,  qBase,   qBase);
+        glm_quat_mul(qBase, qPitch, qCamera);
 
-        glm_vec3_copy(direction, camera_up);
+        // DELETE LATER
+        vec3 camera_front;
         glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
-        printf("Old up: (%f %f %f)\n",   old_up[0], old_up[1], old_up[2]);
-        printf("New up: (%f %f %f)\n\n", new_up[0], new_up[1], new_up[2]);
+        printf("yaw: %.2f   pitch: %.2f\n", yaw, pitch);
+        printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
 }
 
 void camera_move_to_origin(){
@@ -426,8 +429,8 @@ void camera_copy_position(vec3 dest){
 
 void camera_print_coords(){
         printf("Pos: %.2f, %.2f, %.2f\n", camera_pos[0], camera_pos[1], camera_pos[2]);
-        printf("Fnt: %.2f, %.2f, %.2f\n", camera_front[0], camera_front[1], camera_front[2]);
-        printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
+        //printf("Fnt: %.2f, %.2f, %.2f\n", camera_front[0], camera_front[1], camera_front[2]);
+        //printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
 
 void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
