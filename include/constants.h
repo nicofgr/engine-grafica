@@ -6,13 +6,18 @@
 // My defines
 #define SCREEN_WIDTH   800
 #define SCREEN_HEIGHT  600
+
 #define TRUE  1
 #define FALSE 0
-#define TARGET_FPS 60
+
+#define TARGET_FPS 1000
 #define FRAME_TARGET_TIME 1000.0/TARGET_FPS
-#define TARGET_PPS 60.0
-#define PPS_TARGET_TIME 1000.0/TARGET_PPS
+
+#define TARGET_PPS 100.0
+#define PHYSICS_TARGET_TIME 1000.0/TARGET_PPS
+
 #define FOV 70
+
 #define GOLDEN_RATIO 1.61803398875
 
 typedef struct{

@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "cglm/box.h"
 #include "cglm/vec3.h"
 #include "types.h"
 #include "constants.h"
@@ -10,7 +11,6 @@ SDL_GLContext glContext = NULL;
 
 int last_frame_time = 0;
 int last_physics_time = 0;
-int lastTime = 0;
 vec3d original_origin;
 float speed = 300000/100.0; // speed of light/10
 
@@ -226,28 +226,8 @@ void move_origin(vec3d newOrigin){
         camera_move_to_origin();
 }
 
-float phys_delta_time = 0;
-void fixed_update(Engine engine){
-        /**
-        int wait_time = PPS_TARGET_TIME - (SDL_GetTicks() - last_physics_time);
-        if(wait_time > 0 && wait_time <= PPS_TARGET_TIME)
-                return;
-        phys_delta_time = (SDL_GetTicks() - last_physics_time) / 1000.0f;
-        last_physics_time = SDL_GetTicks();
-        **/
-
-}
-
-float delta_time = 0;
-void engine_update(Engine engine){ // TODO fix timestep
-        int wait_time = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time); 
-        if(wait_time > 0 && wait_time <= FRAME_TARGET_TIME){
-                SDL_Delay(wait_time);
-        }
-
-        delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
-        last_frame_time = SDL_GetTicks();
-
+float delta_time = 1.0/TARGET_PPS;
+void engine_update(Engine engine){
         vec3 camPosf;
         camera_copy_position(camPosf);
         float mag_squared = glm_vec3_norm2(camPosf);
@@ -258,14 +238,6 @@ void engine_update(Engine engine){ // TODO fix timestep
         }
 
         engine.update();
-        /**
-        *step = 0;
-        float currentTime = SDL_GetTicks();
-        if(currentTime - lastTime >= 500.0f){ // Updates every x seconds
-                *step = 1;
-                lastTime = SDL_GetTicks();
-        }
-        **/
 }
 
 void engine_draw(Engine engine){
@@ -290,10 +262,8 @@ void engine_draw(Engine engine){
         snprintf(buffer, 128, "Pos: %.2e %.2e %.2e km", distToOrigin[0], distToOrigin[1], distToOrigin[2]);
         //snprintf(buffer, 128, "Pos: %.2f %.2f %.2f km", cameraPos[0], cameraPos[1], cameraPos[2]);
         render_text(buffer, -0.95f, 0.6f, 0.4f, color.orange);
-        snprintf(buffer, 128, "FPS: %.f", 1/delta_time);
+        snprintf(buffer, 128, "PPS: %.f", 1/delta_time);
         render_text(buffer, 0.7f, 0.9f, 0.4f, color.orange);
-        snprintf(buffer, 128, "PPS: %.f", 1/phys_delta_time);
-        render_text(buffer, 0.7f, 0.8f, 0.4f, color.orange);
 
         SDL_GL_SwapWindow(glWindow);
 }
@@ -317,18 +287,35 @@ void engine_quit(){
         renderer_quit();
 }
 
+int step;
+
 void engine_run(Engine engine){
         int quit = FALSE;
         //int counter = 0;
 
         engine_init(engine);
 
+        int lastTime = SDL_GetTicks();
+        int accumulator = 0;
+
         while(quit == FALSE){
-                input(&quit);
-                fixed_update(engine);
-                engine_update(engine);
+
+                int newTime = SDL_GetTicks();
+                int frameTime = newTime - lastTime;
+                if(frameTime > 250)
+                        frameTime = 250;
+                lastTime = newTime;
+
+                accumulator += frameTime;
+                
+                while(accumulator >= PHYSICS_TARGET_TIME){
+                        input(&quit);
+                        engine_update(engine);
+                        accumulator -= PHYSICS_TARGET_TIME;
+                }
+
                 engine_draw(engine);
-                //quit = TRUE;
+
         }
         engine_quit();
 }

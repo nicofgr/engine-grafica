@@ -355,7 +355,7 @@ void camera_move(vec3 direction, const float speed){
 
         glm_vec3_muladds(gravity_up, z*speed, camera_pos);
 
-        printf("Movement direction: %.2f %.2f %.2f", x, y, z);
+        //printf("Movement direction: %.2f %.2f %.2f", x, y, z);
 }
 
 float yaw = -90;
@@ -390,10 +390,10 @@ void camera_rotate(int dx, int dy, float sensitivity){ // TODO: Fix Loxodrome Sp
         glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
 
         //printf("Camera up here is: (%.2f %.2f %.2f)\n",  local_up[0], local_up[1], local_up[2]);
-        printf("Planet up here is: (%.2f %.2f %.2f)\n", gravity_up[0], gravity_up[1], gravity_up[2]);
-        printf("dx: %.2f   dy: %.2f\n", dYaw, dPitch);
-        printf("yaw: %.2f   pitch: %.2f\n", yaw, pitch);
-        printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
+        //printf("Planet up here is: (%.2f %.2f %.2f)\n", gravity_up[0], gravity_up[1], gravity_up[2]);
+        //printf("dx: %.2f   dy: %.2f\n", dYaw, dPitch);
+        //printf("yaw: %.2f   pitch: %.2f\n", yaw, pitch);
+        //printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
 }
 
 void camera_change_up(vec3 direction){
@@ -412,11 +412,12 @@ void camera_change_up(vec3 direction){
         //glm_quat_mul( qYaw,  qBase,   qBase);
         glm_quat_mul(qBase, qPitch, qCamera);
 
+        glm_quat_normalize(qCamera);
         // DELETE LATER
         vec3 camera_front;
         glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
-        printf("yaw: %.2f   pitch: %.2f\n", yaw, pitch);
-        printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
+        //printf("yaw: %.2f   pitch: %.2f\n", yaw, pitch);
+        //printf("Front: (%.2f %.2f %.2f)\n\n", camera_front[0], camera_front[1], camera_front[2]);
 }
 
 void camera_move_to_origin(){
@@ -440,8 +441,8 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         Material material = materialArray_Get(model.materialID);
 
         //renderer_draw_point_setup();
-        //glUseProgram(pointShader);
-        //renderer_draw_point(position, color.star, scale[0]*2);
+        glUseProgram(pointShader);
+        renderer_draw_point(position, color.star, scale[0]*2);
 
 
         // IF CLOSE DO THIS

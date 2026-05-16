@@ -46,7 +46,7 @@ void update(){
         camera_position_get(camera_pos);
         glm_vec3_sub(camera_pos, earth_pos, up);
         glm_normalize(up);
-        camera_change_up(up);
+        //camera_change_up(up);
 }
 
 void draw(){
