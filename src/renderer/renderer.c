@@ -15,8 +15,8 @@ GLuint shaderProgram;
 GLuint textShader;
 GLuint pointShader;
 
-//vec3  camera_pos   = {149.6e6, 0.0f,  50000.0f};
-vec3  camera_pos   = {149.6e6, 6840.0f, 0.2f};
+//vec3  camera_pos   = {149.6e6, 6840.0f, 0.2f}; // Earth
+vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
 
@@ -232,6 +232,7 @@ void renderer_update_light_position(vec3 position){
         glm_vec3_copy(position, light_position);
 }
 
+GLuint gpu_time_query;
 void renderer_init(){
         // GLAD
         if(!gladLoadGLLoader(SDL_GL_GetProcAddress)){
@@ -261,24 +262,36 @@ void renderer_init(){
         materialArray_push(color.red, color.red, color.red, 32.0f, color.black);
 
         glm_quat_for((vec3){-1.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f}, qCamera);
+
+        glGenQueries(1, &gpu_time_query);
 }
 
 void renderer_quit(){
         free(modelArray.array);
 }
 
+GLint    is_available = GL_TRUE;
+GLuint64 gpu_time     = 0;
 void renderer_draw(){
+        glGetQueryObjectiv(gpu_time_query, GL_QUERY_RESULT_AVAILABLE, &is_available);
+        if(is_available == GL_TRUE){
+                glGetQueryObjectui64v(gpu_time_query, GL_QUERY_RESULT, &gpu_time);
+                glBeginQuery(GL_TIME_ELAPSED, gpu_time_query);
+        }
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDisable(GL_CULL_FACE);
+        //glDisable(GL_CULL_FACE);
+        glEnable(GL_CULL_FACE);
         // NOT TRANSPARENT FIRST
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
+        glCullFace(GL_BACK);
 
         // TRANSPARENT OBJECTS
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glUseProgram(shaderProgram);
+        //glEnable(GL_BLEND);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glUseProgram(shaderProgram);
 
         /**
         // WIREFRAMES
@@ -292,6 +305,14 @@ void renderer_draw(){
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_DEPTH_TEST);
         **/
+}
+
+void renderer_draw_finish(){
+        glEndQuery(GL_TIME_ELAPSED);
+}
+
+float renderer_gpu_time(){
+        return (float)(gpu_time)/1.0e+6;
 }
 
 void renderer_draw_GUI(){
@@ -446,7 +467,6 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
 
 
         // IF CLOSE DO THIS
-        //renderer_draw(); // TODO remove from here
         glUseProgram(shaderProgram);
 
 

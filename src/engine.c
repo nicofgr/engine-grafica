@@ -4,15 +4,17 @@
 #include "types.h"
 #include "constants.h"
 #include "renderer/renderer.h"
+#include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>
 
-SDL_Window*   glWindow = NULL;
+SDL_Window*   glWindow  = NULL;
 SDL_GLContext glContext = NULL;
 
-int last_frame_time = 0;
+int last_frame_time   = 0;
 int last_physics_time = 0;
 vec3d original_origin;
-float speed = 300000/100.0; // speed of light/10
+//float speed = 300000/100.0; // speed of light/10
+float speed = (SPEED_OF_C/1000.0)/64;         // speed of light
 
 typedef struct Object{  // Model, Position, Rotation, Scale
         u32   modelID;
@@ -152,6 +154,10 @@ void engine_init(Engine engine) {
         engine.init();
 }
 
+int mouseDeltaX;
+int mouseDeltaY;
+vec3 movementDirection;
+
 void input(int * quit){
         SDL_Event e;
         const Uint8* states = SDL_GetKeyboardState(NULL);
@@ -173,10 +179,10 @@ void input(int * quit){
                                 }
                                 if(e.key.repeat == 0){
                                         if(e.key.keysym.sym == SDLK_PERIOD){
-                                                speed *= 10;
+                                                speed *= 2;
                                         }
                                         else if(e.key.keysym.sym == SDLK_COMMA){
-                                                speed /= 10;
+                                                speed /= 2;
                                         }
                                 }
                                 break;  
@@ -187,7 +193,8 @@ void input(int * quit){
         int dx = 0, dy = 0;
         if(SDL_GetRelativeMouseMode() == SDL_TRUE)
                 SDL_GetRelativeMouseState(&dx, &dy);
-        camera_rotate(dx, dy, 0.2);
+        mouseDeltaX = dx;
+        mouseDeltaY = dy;
 
         // MOVEMENT
         vec3 direction = {0.0f, 0.0f, 0.0f};
@@ -210,8 +217,7 @@ void input(int * quit){
                 direction[2] -= 1.0f; 
         }
         glm_normalize(direction);
-        camera_move(direction, speed * delta_time);
-
+        glm_vec3_copy(direction, movementDirection);
 }
 
 void move_origin(vec3d newOrigin){
@@ -227,20 +233,32 @@ void move_origin(vec3d newOrigin){
 }
 
 float delta_time = 1.0/TARGET_PPS;
-void engine_update(Engine engine){
+float counter = 0;
+void engine_fixed_update(Engine engine){
+        // MOVE ORIGIN
         vec3 camPosf;
         camera_copy_position(camPosf);
         float mag_squared = glm_vec3_norm2(camPosf);
-        if(mag_squared >= pow(10000,2)){ // if dist > 10000km
+        if(mag_squared >= pow(100000,2)){ // if dist > 100,000km
                 vec3d camPos;
                 vec3_to_vec3d(camPosf, camPos);
                 move_origin(camPos);
         }
 
+        // MOVEMENT AND ROTATION
+        camera_rotate(mouseDeltaX, mouseDeltaY, 0.2);
+        camera_move(movementDirection, speed*delta_time);
+
         engine.update();
+        counter += delta_time;
 }
 
 void engine_draw(Engine engine){
+        u32 new_frame_time = SDL_GetTicks();  // milliseconds
+        float delta_frame_time = (new_frame_time - last_frame_time)/1000.0f; // seconds
+        last_frame_time = new_frame_time;
+
+
         renderer_draw();
         engine.draw();
 
@@ -251,21 +269,42 @@ void engine_draw(Engine engine){
         vec3 distToOrigin;
         vec3d_to_vec3(original_origin, origOriginf);
         glm_vec3_add(origOriginf, cameraPos, distToOrigin);
+        float gpu_time = renderer_gpu_time();
+
+
         renderer_draw_GUI();
         char buffer[128];
         snprintf(buffer, 128, "Time:  %.2f sec", last_frame_time/1000.0f);
-        render_text(buffer, -0.95f, 0.9f, 0.4f, color.orange);
-        snprintf(buffer, 128, "dt:    %.2f ms", delta_time*1000.0f);
-        render_text(buffer, -0.95f, 0.8f, 0.4f, color.orange);
-        snprintf(buffer, 128, "Speed: %.2f km/s", speed); // unit/s
-        render_text(buffer, -0.95f, 0.7f, 0.4f, color.orange);
-        snprintf(buffer, 128, "Pos: %.2e %.2e %.2e km", distToOrigin[0], distToOrigin[1], distToOrigin[2]);
-        //snprintf(buffer, 128, "Pos: %.2f %.2f %.2f km", cameraPos[0], cameraPos[1], cameraPos[2]);
-        render_text(buffer, -0.95f, 0.6f, 0.4f, color.orange);
+        render_text(buffer, -0.95f, 0.9f, 0.35f, color.orange);
+        snprintf(buffer, 128, "CPU time: %.2f ms", delta_frame_time*1000.0);
+        render_text(buffer, -0.95f, 0.83f, 0.35f, color.orange);
+        snprintf(buffer, 128, "GPU time: %.2f ms", gpu_time);
+        render_text(buffer, -0.95f, 0.76f, 0.35f, color.orange);
+
+        if(speed*1000 > (float)SPEED_OF_C/10.0f){
+                snprintf(buffer, 128, "Speed: %.2f c", (speed*1000)/(float)SPEED_OF_C); // unit/s
+                render_text(buffer, -0.95f, 0.69f, 0.35f, color.orange);
+        }else{
+                snprintf(buffer, 128, "Speed: %.2f km/s", speed); // unit/s
+                render_text(buffer, -0.95f, 0.69f, 0.35f, color.orange);
+        }
+
+        snprintf(buffer, 128, "Orig Pos:  %.2e %.2e %.2e km", distToOrigin[0], distToOrigin[1], distToOrigin[2]);
+        render_text(buffer, -0.95f, 0.62f, 0.35f, color.orange);
+        snprintf(buffer, 128, "Local Pos: %.2f %.2f %.2f km", cameraPos[0], cameraPos[1], cameraPos[2]);
+        render_text(buffer, -0.95f, 0.55f, 0.35f, color.orange);
+
+
         snprintf(buffer, 128, "PPS: %.f", 1/delta_time);
-        render_text(buffer, 0.7f, 0.9f, 0.4f, color.orange);
+        render_text(buffer, 0.7f, 0.9f, 0.35f, color.orange);
+        snprintf(buffer, 128, "FPS: %.f", 1/delta_frame_time);
+        render_text(buffer, 0.7f, 0.83f, 0.35f, color.orange);
+        snprintf(buffer, 128, "ctr: %.2f", counter);
+        render_text(buffer, 0.7f, 0.76f, 0.35f, color.orange);
 
         SDL_GL_SwapWindow(glWindow);
+
+        renderer_draw_finish();
 }
 
 void draw_point(vec3 position, Color_RGB color, float size){
@@ -309,10 +348,11 @@ void engine_run(Engine engine){
                 accumulator += frameTime;
                 
                 while(accumulator >= PHYSICS_TARGET_TIME){
-                        input(&quit);
-                        engine_update(engine);
+                        input(&quit);   // TODO: Move input out of fixed time step but get the movement here;
+                        engine_fixed_update(engine);
                         accumulator -= PHYSICS_TARGET_TIME;
                 }
+
 
                 engine_draw(engine);
 

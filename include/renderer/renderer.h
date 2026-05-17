@@ -22,10 +22,12 @@ u32  renderer_duplicate_model(u32 modelID);
 u32  renderer_get_sphere();
 
 void renderer_draw();
+void renderer_draw_finish();
 void render_text(const char* text, float x, const float y, const float scale, const Color_RGB color);
 void renderer_draw_GUI();
 void renderer_draw_point(vec3 position, Color_RGB color, float size);
 void renderer_draw_point_setup();
+float renderer_gpu_time();
 
 // Materials
 u32  renderer_create_material(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission);
