@@ -258,7 +258,6 @@ void engine_draw(Engine engine){
         float delta_frame_time = (new_frame_time - last_frame_time)/1000.0f; // seconds
         last_frame_time = new_frame_time;
 
-
         renderer_draw();
         engine.draw();
 

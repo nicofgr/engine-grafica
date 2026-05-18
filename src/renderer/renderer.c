@@ -14,6 +14,7 @@
 GLuint shaderProgram;
 GLuint textShader;
 GLuint pointShader;
+GLuint post_shader;
 
 //vec3  camera_pos   = {149.6e6, 6840.0f, 0.2f}; // Earth
 vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
@@ -59,7 +60,7 @@ MaterialArray materialArray;
 u32 renderer_create_sphere();
 
 // DEFINITIONS
-u32 modelArray_push(GLuint VAO, u32 nFaces, u32 materialID){
+static u32 modelArray_push(GLuint VAO, u32 nFaces, u32 materialID){
         if(modelArray.size == 0){
                 modelArray.array = (Model*) malloc(sizeof(Model));
         }else{
@@ -73,11 +74,11 @@ u32 modelArray_push(GLuint VAO, u32 nFaces, u32 materialID){
         return index;
 }
 
-Model modelArray_Get(u32 modelID){
+static Model modelArray_Get(u32 modelID){
         return modelArray.array[modelID];
 }
 
-u32 materialArray_push(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission){
+static u32 materialArray_push(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission){
         if(materialArray.size == 0){
                 materialArray.array = (Material*) malloc(sizeof(Material));
         }else{
@@ -93,7 +94,7 @@ u32 materialArray_push(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular,
         return index;
 }
 
-Material materialArray_Get(u32 materialID){
+static Material materialArray_Get(u32 materialID){
         if(materialID >= materialArray.size){
                 fprintf(stderr, "[ERROR] materialID (%d) greater than materialArray size (%d)\n", materialID, materialArray.size);
                 exit(0);
@@ -101,10 +102,11 @@ Material materialArray_Get(u32 materialID){
         return materialArray.array[materialID];
 }
 
-void compileShaders(){
+static void compileShaders(){
         shaderProgram = shCreateShaderProgram("shaders/simple_shader.vert", "shaders/simple_shader.frag");
         textShader    = shCreateShaderProgram(         "shaders/text.vert",          "shaders/text.frag");
         pointShader   = shCreateShaderProgram( "shaders/point_shader.vert",  "shaders/point_shader.frag");
+        post_shader   = shCreateShaderProgram("shaders/post_processing.vert", "shaders/post_processing.frag");
 }
 
 
@@ -139,7 +141,8 @@ GLint pointProjLoc;
 GLint pointSizeLoc;
 GLint pointColorLoc;
 
-void setup_text(){
+
+static void setup_text(){
         glUseProgram(textShader);
         text_init();
         glUniform1i(glGetUniformLocation(textShader, "text"), 0);
@@ -161,7 +164,7 @@ void setup_text(){
         glUniformMatrix4fv(projection, 1, GL_FALSE, (const float*) ortho );
 }
 
-void points_setup(){
+static void points_setup(){
         glUseProgram(pointShader);
 
         glGenVertexArrays(1, &pointVAO);
@@ -174,11 +177,74 @@ void points_setup(){
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
 }
 
-void setup_shaders(){
+static GLuint FBO;
+static GLuint RBO;
+static GLuint texture;
+static GLuint post_VAO;
+static GLuint post_VBO;
+static void post_processing_setup(){
+        // Creating frame buffer
+        glGenFramebuffers(1, &FBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+        glGenRenderbuffers(1, &RBO);
+        glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCREEN_WIDTH, SCREEN_HEIGHT);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
+                fprintf(stderr, "[ERROR][FRAMEBUFFER] Framebuffer is not complete!");
+                exit(0);
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // Creating quad vao
+        glUseProgram(post_shader);
+        glGenVertexArrays(1, &post_VAO);
+        glGenBuffers(1, &post_VBO);
+
+        glBindVertexArray(post_VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, post_VBO);
+
+        float quad_vertices[] = {
+                // positions   // texCoords
+                -1.0f,  1.0f,  0.0f, 1.0f,
+                -1.0f, -1.0f,  0.0f, 0.0f,
+                 1.0f, -1.0f,  1.0f, 0.0f,
+
+                -1.0f,  1.0f,  0.0f, 1.0f,
+                 1.0f, -1.0f,  1.0f, 0.0f,
+                 1.0f,  1.0f,  1.0f, 1.0f
+                };
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float)*4*6, quad_vertices, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)(2*sizeof(float)));
+        glEnableVertexAttribArray(1);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+}
+
+static void setup_shaders(){
         compileShaders();
         glUseProgram(shaderProgram);
         // Vertex Shader
@@ -222,6 +288,7 @@ void setup_shaders(){
         glUniform3f(pointColorLoc, color.red.R, color.red.G, color.red.B);
 
         points_setup();
+        post_processing_setup();
 
         modelArray.array = NULL;
         modelArray.size  = 0;
@@ -261,10 +328,13 @@ void renderer_init(){
         // Standard material
         materialArray_push(color.red, color.red, color.red, 32.0f, color.black);
 
+        // Camera rotation quaternion initialization
         glm_quat_for((vec3){-1.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f}, qCamera);
 
+        // GPU time query stuff
         glGenQueries(1, &gpu_time_query);
 }
+
 
 void renderer_quit(){
         free(modelArray.array);
@@ -273,41 +343,39 @@ void renderer_quit(){
 GLint    is_available = GL_TRUE;
 GLuint64 gpu_time     = 0;
 void renderer_draw(){
+        // GPU TIME QUERY
         glGetQueryObjectiv(gpu_time_query, GL_QUERY_RESULT_AVAILABLE, &is_available);
         if(is_available == GL_TRUE){
                 glGetQueryObjectui64v(gpu_time_query, GL_QUERY_RESULT, &gpu_time);
                 glBeginQuery(GL_TIME_ELAPSED, gpu_time_query);
         }
 
+        /**
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //glDisable(GL_CULL_FACE);
         glEnable(GL_CULL_FACE);
-        // NOT TRANSPARENT FIRST
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
         glCullFace(GL_BACK);
-
-        // TRANSPARENT OBJECTS
-        //glEnable(GL_BLEND);
-        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        //glUseProgram(shaderProgram);
-
-        /**
-        // WIREFRAMES
-        glEnable(GL_POLYGON_OFFSET_LINE);
-        glPolygonOffset(-1.0, -1.0);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        //draw_model(color.orange, *mesh);
-
-        glDisable(GL_POLYGON_OFFSET_LINE);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_DEPTH_TEST);
         **/
+
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 }
 
 void renderer_draw_finish(){
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glUseProgram(post_shader);
+        glBindVertexArray(post_VAO);
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+
+        // GPU TIME QUERRY
         glEndQuery(GL_TIME_ELAPSED);
 }
 
@@ -505,7 +573,6 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         glUniform1f(sizeMultiplier, 1);
 
         glBindVertexArray(model.VAO);
-
         glDrawElements(GL_TRIANGLES, model.nFaces, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 }
