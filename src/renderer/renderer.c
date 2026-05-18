@@ -193,6 +193,7 @@ static GLint h_post_camera_front;
 static GLint h_post_camera_right;
 static GLint h_post_camera_up;
 static GLint h_post_sphere_center;
+static GLint h_post_depth_texture;
 
 static void post_processing_setup(){
         // Creating frame buffer
@@ -259,6 +260,7 @@ static void post_processing_setup(){
         h_post_camera_right  = glGetUniformLocation(post_shader, "camera_right"); 
         h_post_camera_up     = glGetUniformLocation(post_shader, "camera_up"); 
         h_post_sphere_center = glGetUniformLocation(post_shader, "planet_center"); 
+        h_post_depth_texture = glGetUniformLocation(post_shader, "u_depth_texture"); 
 }
 
 static void setup_shaders(){
@@ -402,6 +404,9 @@ void renderer_draw_finish(){
                 glUniform3f(h_post_camera_right, camera_right[0], camera_right[1], camera_right[2]); 
                 glUniform3f(h_post_camera_up,    camera_up[0], camera_up[1], camera_up[2]); 
                 glUniform3f(h_post_sphere_center, 57.9e6, 0.0f, 0.0f); 
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, texture_depth_buffer);
+                glUniform1i(h_post_depth_texture, 1);
 
 
                 // Imp stuff
@@ -411,6 +416,7 @@ void renderer_draw_finish(){
                 glUseProgram(post_shader);
                 glBindVertexArray(post_VAO);
                 glDisable(GL_DEPTH_TEST);
+                glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, texture_color_buffer);
                 glDrawArrays(GL_TRIANGLES, 0, 6);
                 glBindVertexArray(0);

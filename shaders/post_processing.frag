@@ -54,6 +54,8 @@ void main(){
 
         FragColor = vec4( vec3(distance_through_atmosphere/(sphere_radius*2.0)) , 1.0);
 
+        float depth = texture(u_depth_texture, TexCoords).r;
+        FragColor = vec4(vec3(depth),1.0);
 
         //FragColor = vec4(uv, 0, 1);
         
