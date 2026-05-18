@@ -20,12 +20,13 @@ GLuint post_shader;
 vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
+vec3 world_camera_pos;
 
 float frustrumNear = 0.1;
 float frustrumFar = 1e12;
 
 // MODEL
-typedef struct Model{ // Meshes, textures, materials, rig, shaders, uv mapping
+typedef struct Model{ // Meshes, texture_color_buffers, materials, rig, shaders, uv mapping
         // Mesh
         GLuint VAO;
         u32    nFaces;
@@ -183,30 +184,40 @@ static void points_setup(){
 }
 
 static GLuint FBO;
-static GLuint RBO;
-static GLuint texture;
+static GLuint texture_color_buffer;
+static GLuint texture_depth_buffer;
 static GLuint post_VAO;
 static GLuint post_VBO;
+static GLint h_post_camera_pos;
+static GLint h_post_camera_front;
+static GLint h_post_camera_right;
+static GLint h_post_camera_up;
+static GLint h_post_sphere_center;
+
 static void post_processing_setup(){
         // Creating frame buffer
         glGenFramebuffers(1, &FBO);
         glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        // Color buffer texture
+        glGenTextures(1, &texture_color_buffer);
+        glBindTexture(GL_TEXTURE_2D, texture_color_buffer);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_color_buffer, 0);
 
-        glGenRenderbuffers(1, &RBO);
-        glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCREEN_WIDTH, SCREEN_HEIGHT);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        // Depth & stencil buffer texture
+        glGenTextures(1, &texture_depth_buffer);
+        glBindTexture(GL_TEXTURE_2D, texture_depth_buffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture_depth_buffer, 0);
 
         if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
                 fprintf(stderr, "[ERROR][FRAMEBUFFER] Framebuffer is not complete!");
@@ -242,6 +253,12 @@ static void post_processing_setup(){
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
+
+        h_post_camera_pos    = glGetUniformLocation(post_shader, "camera_position"); 
+        h_post_camera_front  = glGetUniformLocation(post_shader, "camera_front"); 
+        h_post_camera_right  = glGetUniformLocation(post_shader, "camera_right"); 
+        h_post_camera_up     = glGetUniformLocation(post_shader, "camera_up"); 
+        h_post_sphere_center = glGetUniformLocation(post_shader, "planet_center"); 
 }
 
 static void setup_shaders(){
@@ -342,6 +359,7 @@ void renderer_quit(){
 
 GLint    is_available = GL_TRUE;
 GLuint64 gpu_time     = 0;
+u32 is_post_processing = 1;
 void renderer_draw(){
         // GPU TIME QUERY
         glGetQueryObjectiv(gpu_time_query, GL_QUERY_RESULT_AVAILABLE, &is_available);
@@ -350,30 +368,53 @@ void renderer_draw(){
                 glBeginQuery(GL_TIME_ELAPSED, gpu_time_query);
         }
 
-        /**
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-        glDepthFunc(GL_LESS);
-        glCullFace(GL_BACK);
-        **/
-
-        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
+        if(is_post_processing == TRUE){
+                glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glEnable(GL_DEPTH_TEST);
+        }else{
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glEnable(GL_CULL_FACE);
+                glEnable(GL_DEPTH_TEST);
+                glDepthMask(GL_TRUE);
+                glDepthFunc(GL_LESS);
+                glCullFace(GL_BACK);
+        }
 }
 
 void renderer_draw_finish(){
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        if(is_post_processing == TRUE){
 
-        glUseProgram(post_shader);
-        glBindVertexArray(post_VAO);
-        glDisable(GL_DEPTH_TEST);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindVertexArray(0);
+                glUseProgram(post_shader);
+
+                vec3 camera_front;
+                glm_quat_rotatev(qCamera, (vec3){0.0f, 0.0f, -1.0f}, camera_front);
+                vec3 camera_right;
+                glm_quat_rotatev(qCamera, (vec3){1.0f, 0.0f, 0.0f}, camera_right);
+                vec3 camera_up;
+                glm_quat_rotatev(qCamera, (vec3){0.0f, 1.0f, 0.0f}, camera_up);
+
+                //printf("%.2f %.2f %.2f \n", camera_pos[0], camera_pos[1], camera_pos[2]);
+                        //printf("%.2e %.2e %.2e \n\n", world_camera_pos[0], world_camera_pos[1], world_camera_pos[2]);
+                //glUniform3f(h_post_camera_pos, camera_pos[0], camera_pos[1], camera_pos[2]); 
+                glUniform3f(h_post_camera_pos,   world_camera_pos[0], world_camera_pos[1], world_camera_pos[2]); 
+                glUniform3f(h_post_camera_front, camera_front[0], camera_front[1], camera_front[2]); 
+                glUniform3f(h_post_camera_right, camera_right[0], camera_right[1], camera_right[2]); 
+                glUniform3f(h_post_camera_up,    camera_up[0], camera_up[1], camera_up[2]); 
+                glUniform3f(h_post_sphere_center, 57.9e6, 0.0f, 0.0f); 
+
+
+                // Imp stuff
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                glUseProgram(post_shader);
+                glBindVertexArray(post_VAO);
+                glDisable(GL_DEPTH_TEST);
+                glBindTexture(GL_TEXTURE_2D, texture_color_buffer);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                glBindVertexArray(0);
+        }
 
         // GPU TIME QUERRY
         glEndQuery(GL_TIME_ELAPSED);
@@ -445,6 +486,10 @@ void camera_move(vec3 direction, const float speed){
         glm_vec3_muladds(gravity_up, z*speed, camera_pos);
 
         //printf("Movement direction: %.2f %.2f %.2f", x, y, z);
+}
+
+void renderer_set_camera_world_pos(vec3 position){
+        glm_vec3_copy(position, world_camera_pos);
 }
 
 float yaw = -90;
@@ -575,6 +620,7 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         glBindVertexArray(model.VAO);
         glDrawElements(GL_TRIANGLES, model.nFaces, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+
 }
 
 
