@@ -21,16 +21,24 @@ float max_float = 1e38;
 // Returns [distance to near] and [distance through]
 //https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
 vec2 raySphere(vec3 sphere_center, float sphere_radius, vec3 ray_origin, vec3 ray_direction){
+        vec3 dist_to_center = ray_origin - sphere_center;
+        float a = dot(ray_direction, ray_direction);
+        float b = 2.0 * dot(ray_direction, dist_to_center);
+        float c = dot(dist_to_center, dist_to_center) - (sphere_radius * sphere_radius);
+        float delta = b * b - 4 * a * c;
+
         vec3  sphere_center_vec  = sphere_center - ray_origin;
         float sphere_center_dist = length(sphere_center_vec);
         float angle = acos(dot(normalize(ray_direction), normalize(sphere_center_vec)));
         float closest_distance = sphere_center_dist*sin(angle);
 
-        if(closest_distance < sphere_radius){ // Passing through
+        if(delta > 0){ // Passing through
                 float dist_to_middle = sphere_center_dist*cos(angle);
                 float middle_to_near = sqrt((sphere_radius*sphere_radius) - (closest_distance * closest_distance));
-                float distance_to_sphere_near = dist_to_middle - middle_to_near;
-                float distance_to_sphere_far  = dist_to_middle + middle_to_near;
+                float sqrt_delta = sqrt(delta);
+                float denum = 1/(2 * a);
+                float distance_to_sphere_near = (-b - sqrt_delta) * denum;
+                float distance_to_sphere_far  = (-b + sqrt_delta) * denum;
 
                 if(distance_to_sphere_far >= 0){
                         return vec2(distance_to_sphere_near, distance_to_sphere_far - distance_to_sphere_near);
