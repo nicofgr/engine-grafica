@@ -21,7 +21,7 @@ void main(){
         Normal = mat3(transpose(inverse(model))) * aNormal; // TODO move this to the cpu
 
         vec4 pos = projection * view * model * vec4(aPos, 1.0);
-        pos.z = log2(max(1e-6, 1.0+pos.w)) * Fcoef - 1.0;
+        pos.z = (log2(max(1e-6, 1.0+pos.w)) * Fcoef - 1.0) * pos.w;
         gl_Position = pos;
         //gl_Position = projection * view * model * vec4(aPos, 1.0);
         //gl_PointSize = min((50*sizeMultiplier)/gl_Position.z, 400.0f);
