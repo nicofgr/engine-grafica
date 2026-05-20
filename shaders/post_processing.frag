@@ -20,7 +20,7 @@ uniform vec3  u_light_position;
 
 #define M_PI 3.1415926535897932384626433832795
 float max_float = 1e38;
-float sphere_radius = 6400.0;
+float sphere_radius = 6472.0;
 float inner_radius  = 6371.8; // This will be a uniform
 vec2  resolution = vec2(800,600);
 float u_tan_half_fov = tan((70.0*0.5f)*(M_PI/180.0)); // TODO: Move this to cpu
@@ -58,7 +58,7 @@ float phase_function(float cos_theta){
 
 float density_at_point(vec3 point){
         float height  = (length(point - u_planet_center) - inner_radius) / (sphere_radius - inner_radius); // Varies from 0 to 1
-        float density = exp(-height*16) * (1-height);
+        float density = exp(-height*8) * (1-height);
         return density;
 }
 
@@ -72,7 +72,7 @@ vec3 out_scattering(vec3 ray_origin, vec3 ray_direction, int n_samples, float di
                 result  += (density_at_point(sampler) * ds);
                 sampler += ray_direction*ds;
         }
-        return result * scattering_coef;
+        return result * scattering_coef * 4 * M_PI;
 }
 
 vec3 in_scattering(vec3 ray_origin, vec3 ray_direction, int n_samples, float dist_near, float dist_through_atmosphere){
@@ -92,7 +92,7 @@ vec3 in_scattering(vec3 ray_origin, vec3 ray_direction, int n_samples, float dis
                 result  += (density_at_point(sampler) * exp(-( sample_to_sun + sample_to_camera ))) * ds;
                 sampler += ray_direction*ds;
         }
-        return result * scattering_coef;
+        return result * scattering_coef * 10.0;
 }
 
 
@@ -119,7 +119,7 @@ void main(){
 
                 vec3 in_scatteringg = in_scattering(ray_origin, ray_direction, 50, distance_to_atmosphere, distance_through_atmosphere);
                 atmosphere = vec4(( in_scatteringg * phase ),1.0);
-                FragColor = atmosphere + original_color;
+                FragColor = atmosphere + (original_color * (1 - atmosphere));
                 return;
         }
         FragColor = original_color;

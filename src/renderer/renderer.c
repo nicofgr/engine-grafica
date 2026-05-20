@@ -17,11 +17,12 @@ GLuint pointShader;
 GLuint post_shader;
 
 // camera_pos is always in local space, these positions make the origin move in the engine
-vec3  camera_pos   = {149.6e6, 6840.0f, 0.0f}; // Earth 
+//vec3  camera_pos   = {149.6e6, 6840.0f, 0.0f}; // Earth 
+vec3  camera_pos   = {149.6e6, 6372.0f, 0.0f}; // Earth 
 //vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
-vec3 world_camera_pos;
+vec3d world_camera_pos;
 
 float frustrumNear = 0.1;
 float frustrumFar = 1e12;
@@ -404,15 +405,19 @@ void renderer_draw_finish(){
                 vec3 camera_up;
                 glm_quat_rotatev(qCamera, (vec3){0.0f, 1.0f, 0.0f}, camera_up);
 
-                //printf("%.2f %.2f %.2f \n", camera_pos[0], camera_pos[1], camera_pos[2]);
-                        //printf("%.2e %.2e %.2e \n\n", world_camera_pos[0], world_camera_pos[1], world_camera_pos[2]);
-                //glUniform3f(h_post_camera_pos, camera_pos[0], camera_pos[1], camera_pos[2]); 
-                //glUniform3f(h_post_camera_pos,   world_camera_pos[0], world_camera_pos[1], world_camera_pos[2]); // Update to use relative pos
-                glUniform3f(h_post_camera_pos,   camera_pos[0], camera_pos[1], camera_pos[2]); // Update to use relative pos
+                vec3d earth_original_pos = (vec3d){149.6e6, 0.0f, 0.0f};
+                vec3d delta_dist_d;
+                vec3d_sub(earth_original_pos, world_camera_pos, delta_dist_d);
+                vec3 delta_dist;
+                vec3d_to_vec3(delta_dist_d, delta_dist);
+                printf("Height %.2f\n", glm_vec3_norm(delta_dist));
+                glm_vec3_add(delta_dist, camera_pos, delta_dist);
+                glUniform3f(h_post_camera_pos,   camera_pos[0],   camera_pos[1],   camera_pos[2]);
                 glUniform3f(h_post_camera_front, camera_front[0], camera_front[1], camera_front[2]); 
                 glUniform3f(h_post_camera_right, camera_right[0], camera_right[1], camera_right[2]); 
-                glUniform3f(h_post_camera_up,    camera_up[0], camera_up[1], camera_up[2]); 
-                glUniform3f(h_post_sphere_center, 149.6e6, 0.0f, 0.0f); 
+                glUniform3f(h_post_camera_up,    camera_up[0],    camera_up[1],    camera_up[2]); 
+                glUniform3f(h_post_sphere_center, delta_dist[0], delta_dist[1], delta_dist[2]); 
+                glUniform3f(h_post_light_position, -1e10, 0.0f, 0.0f); 
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, texture_depth_buffer);
                 glUniform1i(h_post_depth_texture, 1);
@@ -502,8 +507,8 @@ void camera_move(vec3 direction, const float speed){
         //printf("Movement direction: %.2f %.2f %.2f", x, y, z);
 }
 
-void renderer_set_camera_world_pos(vec3 position){
-        glm_vec3_copy(position, world_camera_pos);
+void renderer_set_camera_world_pos(vec3d position){
+        vec3d_copy(position, world_camera_pos);
 }
 
 float yaw = -90;
@@ -585,7 +590,7 @@ void camera_print_coords(){
 void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         vec3 position;
         vec3d_to_vec3(position_double, position);
-        Model model = modelArray_Get(modelID);
+        Model    model    = modelArray_Get(modelID);
         Material material = materialArray_Get(model.materialID);
 
         //renderer_draw_point_setup();

@@ -30,8 +30,8 @@ void main(){
         vec3 ambient = light.ambient * material.ambient;
 
         // Diffuse
-        vec3 norm     = normalize(cross(dFdx(FragPos), dFdy(FragPos))); // Flat shading
-        //vec3 norm     = normalize(Normal);
+        //vec3 norm     = normalize(cross(dFdx(FragPos), dFdy(FragPos))); // Flat shading
+        vec3 norm     = normalize(Normal);
         vec3 lightDir = normalize(light.position - FragPos);
         float diff    = max(dot(norm, lightDir), 0.0);
         vec3 diffuse  = light.diffuse * (diff * material.diffuse);
@@ -43,6 +43,7 @@ void main(){
         vec3  specular   = light.specular * (spec * material.specular);
 
         vec3 result = (ambient + diffuse + specular + material.emission);
+             result = (ambient + diffuse + material.emission);
         FragColor = vec4(result, 1.0);
         //FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
 }

@@ -234,7 +234,7 @@ void move_origin(vec3d newOrigin){
 
 float delta_time = 1.0/TARGET_PPS;
 float counter = 0;
-vec3 camera_global_pos;
+vec3d camera_global_pos;
 void engine_fixed_update(Engine engine){
         // MOVE ORIGIN
         vec3 camPosf;
@@ -267,11 +267,12 @@ void engine_draw(Engine engine){
         // GUI & TEXT
         vec3 cameraPos;
         camera_copy_position(cameraPos);
-        vec3 origOriginf;
-        vec3 distToOrigin;
-        vec3d_to_vec3(original_origin, origOriginf);
-        glm_vec3_add(origOriginf, cameraPos, distToOrigin);
-        glm_vec3_copy(distToOrigin, camera_global_pos);
+        vec3d camera_pos_double;
+        vec3_to_vec3d(cameraPos, camera_pos_double);
+
+        vec3d distToOrigin;
+        vec3d_add(original_origin, camera_pos_double, distToOrigin);
+        vec3d_copy(distToOrigin, camera_global_pos);
         float gpu_time = renderer_gpu_time();
 
 
