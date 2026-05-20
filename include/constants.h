@@ -28,6 +28,7 @@ typedef struct{
         Color_RGB green;
         Color_RGB orange;
         Color_RGB black;
+        Color_RGB gray;
         Color_RGB star;
 } ColorPallete;
 

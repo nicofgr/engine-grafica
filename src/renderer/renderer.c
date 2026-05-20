@@ -17,7 +17,8 @@ GLuint pointShader;
 GLuint post_shader;
 
 //vec3  camera_pos   = {149.6e6, 6840.0f, 0.2f}; // Earth
-vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
+//vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
+vec3  camera_pos   = {0.0f, 2450.0f, 0.0f}; // Mercury HERE
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
 vec3 world_camera_pos;
@@ -260,7 +261,7 @@ static void post_processing_setup(){
         h_post_camera_front  = glGetUniformLocation(post_shader, "camera_front"); 
         h_post_camera_right  = glGetUniformLocation(post_shader, "camera_right"); 
         h_post_camera_up     = glGetUniformLocation(post_shader, "camera_up"); 
-        h_post_sphere_center = glGetUniformLocation(post_shader, "planet_center"); 
+        h_post_sphere_center = glGetUniformLocation(post_shader, "u_planet_center"); 
         h_post_depth_texture = glGetUniformLocation(post_shader, "u_depth_texture"); 
         h_post_light_position = glGetUniformLocation(post_shader, "u_light_position"); 
 
@@ -356,7 +357,7 @@ void renderer_init(){
         renderer_create_sphere();
 
         // Standard material
-        materialArray_push(color.red, color.red, color.red, 32.0f, color.black);
+        materialArray_push(color.gray, color.gray, color.gray, 32.0f, color.black);
 
         // Camera rotation quaternion initialization
         glm_quat_for((vec3){-1.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f}, qCamera);
@@ -411,6 +412,7 @@ void renderer_draw_finish(){
                 glUniform3f(h_post_camera_right, camera_right[0], camera_right[1], camera_right[2]); 
                 glUniform3f(h_post_camera_up,    camera_up[0], camera_up[1], camera_up[2]); 
                 glUniform3f(h_post_sphere_center, 57.9e6, 0.0f, 0.0f); 
+                glUniform3f(h_post_sphere_center, 10000.0f, 0.0f, 0.0f); // HERE
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, texture_depth_buffer);
                 glUniform1i(h_post_depth_texture, 1);
