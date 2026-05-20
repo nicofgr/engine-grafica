@@ -194,6 +194,7 @@ static GLint h_post_camera_right;
 static GLint h_post_camera_up;
 static GLint h_post_sphere_center;
 static GLint h_post_depth_texture;
+static GLint h_post_light_position;
 
 static void post_processing_setup(){
         // Creating frame buffer
@@ -261,6 +262,15 @@ static void post_processing_setup(){
         h_post_camera_up     = glGetUniformLocation(post_shader, "camera_up"); 
         h_post_sphere_center = glGetUniformLocation(post_shader, "planet_center"); 
         h_post_depth_texture = glGetUniformLocation(post_shader, "u_depth_texture"); 
+        h_post_light_position = glGetUniformLocation(post_shader, "u_light_position"); 
+
+        GLuint h_fCoef = glGetUniformLocation(post_shader, "f_coef");
+        glUniform1f(h_fCoef, 2.0/log2(frustrumFar + 1.0));
+
+        GLuint h_frustrum_far = glGetUniformLocation(post_shader, "frustrum_far");
+        glUniform1f(h_frustrum_far, frustrumFar);
+
+        glUniform3f(h_post_light_position, 0.0f, 0.0f, 0.0f);
 }
 
 static void setup_shaders(){
@@ -291,7 +301,8 @@ static void setup_shaders(){
         glUniform1f(frustrumFarLoc, frustrumFar);
         glUniform1f(nearResLoc, 1);
         glUniform3f(lightPos, 0.0f, 0.0f, 0.0f);
-        glUniform3f(lightAmbient, 0.2*color.star.R, 0.2*color.star.G, 0.2*color.star.B); // Light color
+        float ambient_strenght = 0.0f;
+        glUniform3f(lightAmbient, ambient_strenght*color.star.R, ambient_strenght*color.star.G, ambient_strenght*color.star.B); // Light color
         glUniform3f(lightDiffuse, color.star.R, color.star.G, color.star.B); // Light color
         glUniform3f(lightSpecular, 1.0f, 1.0f, 1.0f); // Light color
 
@@ -372,21 +383,17 @@ void renderer_draw(){
 
         if(is_post_processing == TRUE){
                 glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                glEnable(GL_DEPTH_TEST);
-        }else{
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                glEnable(GL_CULL_FACE);
-                glEnable(GL_DEPTH_TEST);
-                glDepthMask(GL_TRUE);
-                glDepthFunc(GL_LESS);
-                glCullFace(GL_BACK);
         }
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
+        glCullFace(GL_BACK);
 }
 
 void renderer_draw_finish(){
         if(is_post_processing == TRUE){
-
                 glUseProgram(post_shader);
 
                 vec3 camera_front;

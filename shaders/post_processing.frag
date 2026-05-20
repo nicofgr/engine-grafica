@@ -101,12 +101,15 @@ void main(){
 
         vec4 scattering_constant = vec4(0.0058, 0.00135, 0.0331, 1.0);
 
+        float optical_thickness = optical_length(ray_origin, ray_direction, 5, distance_to_atmosphere, distance_through_atmosphere, planet_center);
         //FragColor = atmosphere * strength*scattering_constant;
         //original_color = vec4(vec3( linear_depth(texture(u_depth_texture, TexCoords).r))/frustrum_far  ,1.0); // depth
+        atmosphere *= (strength*scattering_constant*optical_thickness);
+        FragColor = atmosphere;
+        return;
 
 
         if(distance_through_atmosphere > 0){
-                float optical_thickness = optical_length(ray_origin, ray_direction, 5, distance_to_atmosphere, distance_through_atmosphere, planet_center);
                 FragColor = atmosphere*strength*scattering_constant*optical_thickness + original_color;
                 return;
         }

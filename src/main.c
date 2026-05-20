@@ -21,6 +21,7 @@ void init(){
         sun     = create_sphere(position,                        695700.0f);
         mercury = create_sphere((vec3d){    57.9e6, 0.0f, 0.0f},   2439.7f);
         venus   = create_sphere((vec3d){   108.0e6, 0.0f, 0.0f},   6051.8f);
+        /**
         earth   = create_sphere((vec3d){   149.6e6, 0.0f, 0.0f},   6371.8f);
         mars    = create_sphere((vec3d){   228.0e6, 0.0f, 0.0f},   3389.5f);
         jupiter = create_sphere((vec3d){   778.0e6, 0.0f, 0.0f},  69886.0f);
@@ -28,12 +29,14 @@ void init(){
         uranus  = create_sphere((vec3d){    2.87e9, 0.0f, 0.0f},  25362.8f);
         neptune = create_sphere((vec3d){     4.5e9, 0.0f, 0.0f},  24622.0f);
         pluto   = create_sphere((vec3d){     5.9e9, 0.0f, 0.0f},   2376.6f);
+        **/
 
         u32 glowingMat = create_material(color.star, color.star, color.star, 32, (Color_RGB){50.0, 50.0, 50.0});
         change_material(sun, glowingMat);
 }
 
 void update(){
+        /**
         //position_update(mercury, (vec3){5*cos(2*last_frame_time/1000.0), 0.0f, 5*sin(2*last_frame_time/1000.0)});
         //position_update(venus, (vec3){10*cos(last_frame_time/1000.0), 0.0f, 10*sin(last_frame_time/1000.0)});
         vec3 up;
@@ -47,12 +50,14 @@ void update(){
         glm_vec3_sub(camera_pos, earth_pos, up);
         glm_normalize(up);
         //camera_change_up(up);
+        **/
 }
 
 void draw(){
         draw_object(sun);
         draw_object(mercury);
         draw_object(venus);
+        /**
         draw_object(earth);
         draw_object(mars);
         draw_object(jupiter);
@@ -60,6 +65,7 @@ void draw(){
         draw_object(uranus);
         draw_object(neptune);
         draw_object(pluto);
+        **/
 }
 
 Engine engine = {
