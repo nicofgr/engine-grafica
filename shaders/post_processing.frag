@@ -16,12 +16,12 @@ uniform vec3  u_planet_center;
 uniform float f_coef;
 uniform float frustrum_far;
 
-uniform vec3 u_light_position;
+uniform vec3  u_light_position;
 
 #define M_PI 3.1415926535897932384626433832795
 float max_float = 1e38;
-float sphere_radius = 2800.0;
-float inner_radius  = 2340; // This will be a uniform
+float sphere_radius = 6400.0;
+float inner_radius  = 6371.8; // This will be a uniform
 vec2  resolution = vec2(800,600);
 float u_tan_half_fov = tan((70.0*0.5f)*(M_PI/180.0)); // TODO: Move this to cpu
 vec3 scattering_coef = vec3(0.058, 0.135, 0.331);

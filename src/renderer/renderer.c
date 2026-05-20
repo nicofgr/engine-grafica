@@ -16,8 +16,9 @@ GLuint textShader;
 GLuint pointShader;
 GLuint post_shader;
 
-//vec3  camera_pos   = {149.6e6, 6840.0f, 0.2f}; // Earth
-vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
+// camera_pos is always in local space, these positions make the origin move in the engine
+vec3  camera_pos   = {149.6e6, 6840.0f, 0.0f}; // Earth 
+//vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
 vec3 world_camera_pos;
@@ -406,11 +407,12 @@ void renderer_draw_finish(){
                 //printf("%.2f %.2f %.2f \n", camera_pos[0], camera_pos[1], camera_pos[2]);
                         //printf("%.2e %.2e %.2e \n\n", world_camera_pos[0], world_camera_pos[1], world_camera_pos[2]);
                 //glUniform3f(h_post_camera_pos, camera_pos[0], camera_pos[1], camera_pos[2]); 
-                glUniform3f(h_post_camera_pos,   world_camera_pos[0], world_camera_pos[1], world_camera_pos[2]); 
+                //glUniform3f(h_post_camera_pos,   world_camera_pos[0], world_camera_pos[1], world_camera_pos[2]); // Update to use relative pos
+                glUniform3f(h_post_camera_pos,   camera_pos[0], camera_pos[1], camera_pos[2]); // Update to use relative pos
                 glUniform3f(h_post_camera_front, camera_front[0], camera_front[1], camera_front[2]); 
                 glUniform3f(h_post_camera_right, camera_right[0], camera_right[1], camera_right[2]); 
                 glUniform3f(h_post_camera_up,    camera_up[0], camera_up[1], camera_up[2]); 
-                glUniform3f(h_post_sphere_center, 57.9e6, 0.0f, 0.0f); 
+                glUniform3f(h_post_sphere_center, 149.6e6, 0.0f, 0.0f); 
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, texture_depth_buffer);
                 glUniform1i(h_post_depth_texture, 1);
@@ -428,7 +430,6 @@ void renderer_draw_finish(){
                 glDrawArrays(GL_TRIANGLES, 0, 6);
                 glBindVertexArray(0);
         }
-
         // GPU TIME QUERRY
         glEndQuery(GL_TIME_ELAPSED);
 }
