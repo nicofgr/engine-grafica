@@ -240,7 +240,7 @@ void engine_fixed_update(Engine engine){
         vec3 camPosf;
         camera_copy_position(camPosf);
         float mag_squared = glm_vec3_norm2(camPosf);
-        if(mag_squared >= pow(100000,2)){ // if dist > 100,000km
+        if(mag_squared >= pow(10000,2)){ // if dist > 10,000km
                 vec3d camPos;
                 vec3_to_vec3d(camPosf, camPos);
                 move_origin(camPos);

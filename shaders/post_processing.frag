@@ -24,7 +24,7 @@ float sphere_radius = 6472.0;
 float inner_radius  = 6371.8; // This will be a uniform
 vec2  resolution = vec2(800,600);
 float u_tan_half_fov = tan((70.0*0.5f)*(M_PI/180.0)); // TODO: Move this to cpu
-vec3 scattering_coef = vec3(0.058, 0.135, 0.331);
+vec3 scattering_coef = vec3(0.00058, 0.00135, 0.00331);
 
 float linear_depth(float depth){
         float  z_ndc = depth * 2.0 - 1.0;
@@ -37,14 +37,18 @@ float linear_depth(float depth){
 vec2 raySphere(vec3 sphere_center, float sphere_radius, vec3 ray_origin, vec3 ray_direction){
         vec2 result;
         vec3 dist_to_center = ray_origin - sphere_center;
+
+        sphere_radius  /= inner_radius;
+        dist_to_center /= inner_radius;
+
         float bh = dot(ray_direction, dist_to_center);
         float c  = dot(dist_to_center, dist_to_center) - (sphere_radius * sphere_radius);
         float delta = bh * bh - c;
 
         // Passing through
         float sqrt_delta = sqrt( max(delta,0.0) );
-        float distance_to_sphere_near = max((-bh - sqrt_delta), 0.0);
-        float distance_to_sphere_far  = (-bh + sqrt_delta);
+        float distance_to_sphere_near = max((-bh - sqrt_delta), 0.0) * inner_radius;
+        float distance_to_sphere_far  = (-bh + sqrt_delta)           * inner_radius;
 
         if(distance_to_sphere_far >= 0){
                 return vec2(distance_to_sphere_near, distance_to_sphere_far - distance_to_sphere_near);
@@ -58,7 +62,7 @@ float phase_function(float cos_theta){
 
 float density_at_point(vec3 point){
         float height  = (length(point - u_planet_center) - inner_radius) / (sphere_radius - inner_radius); // Varies from 0 to 1
-        float density = exp(-height*8) * (1-height);
+        float density = exp(-height/0.25) * (1-height);
         return density;
 }
 
@@ -72,7 +76,7 @@ vec3 out_scattering(vec3 ray_origin, vec3 ray_direction, int n_samples, float di
                 result  += (density_at_point(sampler) * ds);
                 sampler += ray_direction*ds;
         }
-        return result * scattering_coef * 4 * M_PI;
+        return result * scattering_coef * M_PI;
 }
 
 vec3 in_scattering(vec3 ray_origin, vec3 ray_direction, int n_samples, float dist_near, float dist_through_atmosphere){
@@ -81,18 +85,17 @@ vec3 in_scattering(vec3 ray_origin, vec3 ray_direction, int n_samples, float dis
         float ds = dist_through_atmosphere/n_samples;
         vec3  sampler = sampler_start;
         sampler += ray_direction*(ds*0.5);
+        vec3 sample_to_camera = vec3(0.0);
         for(int i = 0; i < n_samples; i++){
                 vec3  sample_to_sun_dir = normalize(u_light_position - sampler);
                 vec2  sample_to_sun_ray = raySphere(u_planet_center, sphere_radius, sampler, sample_to_sun_dir); // to the edge of atmos
                 vec3 sample_to_sun = out_scattering(sampler, sample_to_sun_dir, 5, 0.0, sample_to_sun_ray.y);
 
-                float dist = length(sampler - sampler_start);
-                vec3 sample_to_camera = out_scattering(sampler, -ray_direction, 5, 0.0, dist); 
-
+                sample_to_camera += density_at_point(sampler) * ds * scattering_coef * M_PI;
                 result  += (density_at_point(sampler) * exp(-( sample_to_sun + sample_to_camera ))) * ds;
                 sampler += ray_direction*ds;
         }
-        return result * scattering_coef * 10.0;
+        return result * scattering_coef * 5;
 }
 
 

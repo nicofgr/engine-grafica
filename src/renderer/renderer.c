@@ -17,8 +17,8 @@ GLuint pointShader;
 GLuint post_shader;
 
 // camera_pos is always in local space, these positions make the origin move in the engine
-//vec3  camera_pos   = {149.6e6, 6840.0f, 0.0f}; // Earth 
-vec3  camera_pos   = {149.6e6, 6372.0f, 0.0f}; // Earth 
+vec3  camera_pos   = {149.6e6, 6840.0f, 0.0f}; // Earth 
+//vec3  camera_pos   = {0.0f, 0.0f, 0.0f}; // Earth 
 //vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
@@ -410,7 +410,7 @@ void renderer_draw_finish(){
                 vec3d_sub(earth_original_pos, world_camera_pos, delta_dist_d);
                 vec3 delta_dist;
                 vec3d_to_vec3(delta_dist_d, delta_dist);
-                printf("Height %.2f\n", glm_vec3_norm(delta_dist));
+                printf("Height %.2f km\n", glm_vec3_norm(delta_dist) - 6371.8);
                 glm_vec3_add(delta_dist, camera_pos, delta_dist);
                 glUniform3f(h_post_camera_pos,   camera_pos[0],   camera_pos[1],   camera_pos[2]);
                 glUniform3f(h_post_camera_front, camera_front[0], camera_front[1], camera_front[2]); 
