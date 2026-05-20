@@ -250,10 +250,17 @@ void engine_fixed_update(Engine engine){
         camera_rotate(mouseDeltaX, mouseDeltaY, 0.2);
         camera_move(movementDirection, speed*delta_time);
 
+
+        vec3 cameraPos;
+        camera_copy_position(cameraPos);
+        vec3d camera_pos_double;
+        vec3_to_vec3d(cameraPos, camera_pos_double);
+        vec3d_add(original_origin, camera_pos_double, camera_global_pos);
+        renderer_set_camera_world_pos(camera_global_pos);
+
         engine.update();
         counter += delta_time;
 
-        renderer_set_camera_world_pos(camera_global_pos);
 }
 
 void engine_draw(Engine engine){
@@ -267,14 +274,8 @@ void engine_draw(Engine engine){
         // GUI & TEXT
         vec3 cameraPos;
         camera_copy_position(cameraPos);
-        vec3d camera_pos_double;
-        vec3_to_vec3d(cameraPos, camera_pos_double);
 
-        vec3d distToOrigin;
-        vec3d_add(original_origin, camera_pos_double, distToOrigin);
-        vec3d_copy(distToOrigin, camera_global_pos);
         float gpu_time = renderer_gpu_time();
-
 
         renderer_draw_GUI();
         char buffer[128];
@@ -293,7 +294,7 @@ void engine_draw(Engine engine){
                 render_text(buffer, -0.95f, 0.69f, 0.35f, color.orange);
         }
 
-        snprintf(buffer, 128, "Orig Pos:  %.2e %.2e %.2e km", distToOrigin[0], distToOrigin[1], distToOrigin[2]);
+        snprintf(buffer, 128, "Orig Pos:  %.2e %.2e %.2e km", camera_global_pos[0], camera_global_pos[1], camera_global_pos[2]);
         render_text(buffer, -0.95f, 0.62f, 0.35f, color.orange);
         snprintf(buffer, 128, "Local Pos: %.2f %.2f %.2f km", cameraPos[0], cameraPos[1], cameraPos[2]);
         render_text(buffer, -0.95f, 0.55f, 0.35f, color.orange);
@@ -334,7 +335,6 @@ int step;
 
 void engine_run(Engine engine){
         int quit = FALSE;
-        //int counter = 0;
 
         engine_init(engine);
 
@@ -342,7 +342,6 @@ void engine_run(Engine engine){
         int accumulator = 0;
 
         while(quit == FALSE){
-
                 int newTime = SDL_GetTicks();
                 int frameTime = newTime - lastTime;
                 if(frameTime > 250)
@@ -356,10 +355,7 @@ void engine_run(Engine engine){
                         engine_fixed_update(engine);
                         accumulator -= PHYSICS_TARGET_TIME;
                 }
-
-
                 engine_draw(engine);
-
         }
         engine_quit();
 }

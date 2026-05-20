@@ -17,7 +17,8 @@ GLuint pointShader;
 GLuint post_shader;
 
 // camera_pos is always in local space, these positions make the origin move in the engine
-vec3  camera_pos   = {149.6e6, 6840.0f, 0.0f}; // Earth 
+//vec3  camera_pos   = {149.6e6, 6840.0f, 0.0f}; // Earth 
+vec3  camera_pos   = {149.6e6, 6371.9f, 0.0f}; // Earth 
 //vec3  camera_pos   = {0.0f, 0.0f, 0.0f}; // Earth 
 //vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
