@@ -11,6 +11,15 @@ void mesh_free(Mesh* mesh){
 }
 
 int mesh_pushVert(Mesh* mesh, vec3 vertice){
+        if(mesh->vertices.size > 0){ // Look if vertice dont already exist
+                for(int i = 0; i < mesh->vertices.size; i++){
+                        if( mesh->vertices.array[i][0] == vertice[0] &&
+                            mesh->vertices.array[i][1] == vertice[1] &&
+                            mesh->vertices.array[i][2] == vertice[2]){
+                                return i;
+                        }
+                }
+        }
         if(mesh->vertices.size == 0){
                 mesh->vertices.array = (vec3*)malloc(sizeof(vec3));
         }else{
@@ -210,4 +219,5 @@ void mesh_create_sphere(Mesh* mesh, u32 nSubdiv){
                 glm_vec3_normalize(mesh->vertices.array[i]);
                 glm_vec3_copy(mesh->vertices.array[i], mesh->normals.array[i]);
         }
+        printf("[MESH] Vertex count: %d\n", mesh->vertices.size);
 }
