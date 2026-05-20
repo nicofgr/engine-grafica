@@ -17,8 +17,7 @@ GLuint pointShader;
 GLuint post_shader;
 
 //vec3  camera_pos   = {149.6e6, 6840.0f, 0.2f}; // Earth
-//vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
-vec3  camera_pos   = {0.0f, 2450.0f, 0.0f}; // Mercury HERE
+vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
 vec3 world_camera_pos;
@@ -412,7 +411,6 @@ void renderer_draw_finish(){
                 glUniform3f(h_post_camera_right, camera_right[0], camera_right[1], camera_right[2]); 
                 glUniform3f(h_post_camera_up,    camera_up[0], camera_up[1], camera_up[2]); 
                 glUniform3f(h_post_sphere_center, 57.9e6, 0.0f, 0.0f); 
-                glUniform3f(h_post_sphere_center, 10000.0f, 0.0f, 0.0f); // HERE
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, texture_depth_buffer);
                 glUniform1i(h_post_depth_texture, 1);

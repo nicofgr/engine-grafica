@@ -19,11 +19,10 @@ void init(){
         vec3d position = {0.0f, 0.0f, 0.0f};
 
         sun     = create_sphere(position,                        695700.0f);
-        //mercury = create_sphere((vec3d){    57.9e6, 0.0f, 0.0f},   2439.7f);
-        mercury = create_sphere((vec3d){     10000, 0.0f, 0.0f},   2439.7f); // HERE
+        mercury = create_sphere((vec3d){    57.9e6, 0.0f, 0.0f},   2439.7f);
         venus   = create_sphere((vec3d){   108.0e6, 0.0f, 0.0f},   6051.8f);
-        /**
         earth   = create_sphere((vec3d){   149.6e6, 0.0f, 0.0f},   6371.8f);
+        /**
         mars    = create_sphere((vec3d){   228.0e6, 0.0f, 0.0f},   3389.5f);
         jupiter = create_sphere((vec3d){   778.0e6, 0.0f, 0.0f},  69886.0f);
         saturn  = create_sphere((vec3d){    1.43e9, 0.0f, 0.0f},  58232.0f);
@@ -55,11 +54,11 @@ void update(){
 }
 
 void draw(){
-        //draw_object(sun);
+        draw_object(sun);
         draw_object(mercury);
         draw_object(venus);
-        /**
         draw_object(earth);
+        /**
         draw_object(mars);
         draw_object(jupiter);
         draw_object(saturn);
