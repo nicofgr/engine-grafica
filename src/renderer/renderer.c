@@ -11,6 +11,9 @@
 #include <cglm/cglm.h>
 #include <glad/glad.h>
 
+u32 is_post_processing = GL_FALSE;
+
+
 GLuint shaderProgram;
 GLuint textShader;
 GLuint pointShader;
@@ -18,12 +21,12 @@ GLuint post_shader;
 
 // camera_pos is always in local space, these positions make the origin move in the engine
 //vec3  camera_pos   = {149.6e6, 6840.0f, 0.0f}; // Earth 
-vec3  camera_pos   = {149.6e6, 6371.9f, 0.0f}; // Earth 
-//vec3  camera_pos   = {0.0f, 0.0f, 0.0f}; // Earth 
+//vec3  camera_pos   = {149.6e6, 6371.9f, 0.0f}; // Earth 
 //vec3  camera_pos   = {57.9e6, 2450.0f, 0.0f}; // Mercury
+vec3  camera_pos   = {0.0f, 0.0f, 0.0f}; 
+vec3d world_camera_pos;
 vec3  gravity_up   = {0.0f, 1.0f,  0.0f};
 versor qCamera;
-vec3d world_camera_pos;
 
 float frustrumNear = 0.1;
 float frustrumFar = 1e12;
@@ -62,6 +65,7 @@ MaterialArray materialArray;
 
 // PROTOTYPES
 u32 renderer_create_sphere();
+u32 renderer_create_triangle(u32);
 
 // DEFINITIONS
 static u32 modelArray_push(GLuint VAO, u32 nFaces, u32 materialID){
@@ -357,6 +361,7 @@ void renderer_init(){
 
         // Standard models (sphere, quad, square, etc)
         renderer_create_sphere();
+        renderer_create_triangle(1);
 
         // Standard material
         materialArray_push(color.gray, color.gray, color.gray, 32.0f, color.black);
@@ -375,7 +380,6 @@ void renderer_quit(){
 
 GLint    is_available = GL_TRUE;
 GLuint64 gpu_time     = 0;
-u32 is_post_processing = 1;
 void renderer_draw(){
         // GPU TIME QUERY
         glGetQueryObjectiv(gpu_time_query, GL_QUERY_RESULT_AVAILABLE, &is_available);
@@ -387,12 +391,14 @@ void renderer_draw(){
         if(is_post_processing == TRUE){
                 glBindFramebuffer(GL_FRAMEBUFFER, FBO);
         }
+        glClearColor(0.1, 0.1, 0.1, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
         glCullFace(GL_BACK);
+
 }
 
 void renderer_draw_finish(){
@@ -512,6 +518,10 @@ void renderer_set_camera_world_pos(vec3d position){
         vec3d_copy(position, world_camera_pos);
 }
 
+void renderer_set_camera_pos(vec3d position){
+        vec3d_to_vec3(position, camera_pos);
+}
+
 float yaw = -90;
 float pitch = 0;
 void camera_rotate(int dx, int dy, float sensitivity){ // TODO: Fix Loxodrome Spiraling and Collinear Vector Singularity
@@ -588,7 +598,7 @@ void camera_print_coords(){
         //printf("Up:  %.2f, %.2f, %.2f\n\n", camera_up[0], camera_up[1], camera_up[2]);
 }
 
-void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
+void renderer_draw_model(const u32 modelID, vec3d position_double, versor rotation, vec3 scale){
         vec3 position;
         vec3d_to_vec3(position_double, position);
         Model    model    = modelArray_Get(modelID);
@@ -602,21 +612,20 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         // IF CLOSE DO THIS
         glUseProgram(shaderProgram);
 
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         // MODEL MATRIX
         mat4 mesh;
         glm_mat4_identity(mesh);
         glm_translate(mesh, position);
         float rotate_speed = -1.0f/10.0; // frequency
-        //glm_rotate(mesh, rotate_speed*((float)SDL_GetTicks()/1000.0f)*GLM_PI*2, (vec3){0.0f, 1.0f, 0.0f});
+        glm_quat_rotate(mesh, rotation, mesh);
         glm_scale(mesh, scale);
-
 
         // VIEW MATRIX
         mat4 view;
         glm_mat4_identity(view);
         glm_quat_look(camera_pos, qCamera, view);
-
 
         // PROJECTION MATRIX
         mat4 proj;
@@ -640,6 +649,8 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, vec3 scale){
         glBindVertexArray(model.VAO);
         glDrawElements(GL_TRIANGLES, model.nFaces, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 }
 
@@ -702,7 +713,7 @@ u32 renderer_create_model(Mesh mesh, u32 materialID){
 
 u32 renderer_create_sphere(){
         Mesh sphere = {.faces = {0}, .vertices = {NULL}};
-        mesh_create_sphere(&sphere,4);
+        mesh_create_sphere(&sphere,0);
         u32 modelID = renderer_create_model(sphere, 0);
         mesh_free(&sphere); 
         return modelID;
@@ -711,6 +722,21 @@ u32 renderer_create_sphere(){
 u32 renderer_get_sphere(){
         return 0;
 }
+
+u32 renderer_create_triangle(u32 subdivision_level){
+        Mesh triangle = {.faces = {0}, .vertices = {NULL}};
+        mesh_new(&triangle);
+
+        mesh_create_triangle(&triangle, subdivision_level); 
+        u32 modelID = renderer_create_model(triangle, 0);
+        mesh_free(&triangle);
+        return modelID;
+}
+
+u32 renderer_get_triangle(){
+        return 1;
+}
+
 
 
 // TODO optimize text rendering
@@ -754,3 +780,4 @@ void render_text(const char* text, float x, float y, const float scale, const Co
 
 void renderer_draw_quad(float x1, float x2, float y1, float y2){
 }
+

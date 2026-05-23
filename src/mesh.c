@@ -69,14 +69,14 @@ void mesh_pushFaces(Mesh* mesh, const u32_Array faces){
         }
 }
 void mesh_removeFace(Mesh* mesh, u32 face){  // Copiar a ultima pra face removida e realloc
-        //u32 x1 = mesh->faces.array[(face*3)];
-        //u32 x2 = mesh->faces.array[(face*3)+1];
-        //u32 x3 = mesh->faces.array[(face*3)+2];
-        //printf("Removing face %d: %d %d %d\n", face, x1, x2, x3);
-        memcpy(&mesh->faces.array[face*3], &mesh->faces.array[(mesh->faces.size-1)*3], sizeof(u32)*3);
+        u32 x1 = mesh->faces.array[(face*3)];
+        u32 x2 = mesh->faces.array[(face*3)+1];
+        u32 x3 = mesh->faces.array[(face*3)+2];
+        printf("Removing face %d: %d %d %d\n", face, x1, x2, x3);
+        if(mesh->faces.size > 1){
+                memcpy(&mesh->faces.array[face*3], &mesh->faces.array[(mesh->faces.size-1)*3], sizeof(u32)*3);
+        }
         u32* temp = (u32*)realloc(mesh->faces.array, sizeof(u32)*((mesh->faces.size-1)*3));
-        if(temp == NULL)
-                exit(0);
         mesh->faces.array = temp;
         mesh->faces.size--;
 }
@@ -220,4 +220,34 @@ void mesh_create_sphere(Mesh* mesh, u32 nSubdiv){
                 glm_vec3_copy(mesh->vertices.array[i], mesh->normals.array[i]);
         }
         printf("[MESH] Vertex count: %d\n", mesh->vertices.size);
+}
+
+void mesh_new(Mesh* mesh){
+        mesh->vertices.array = NULL;
+        mesh->normals.array  = NULL;
+        mesh->faces.array    = NULL;
+        mesh->vertices.size  = 0;
+        mesh->normals.size   = 0;
+        mesh->faces.size     = 0;
+}
+
+void mesh_create_triangle(Mesh* mesh, const u32 subdivision_level){
+        mesh_clear(mesh);
+        float L = 1;
+        float invsqrt3 = 1/sqrt(3);
+        vec3 vertices[3] = {{0.0, L*invsqrt3, 0.0}, {-L*0.5, -L*0.5*invsqrt3, 0.0}, {L*0.5, -L*0.5*invsqrt3, 0.0}};
+        Vec3_Array triangle_vertices = {.array = vertices, .size = 3};
+        u32 faces[3] = {0, 1, 2};
+        u32_Array triangle_faces = {.array=faces, .size=1};
+
+        mesh_pushVerts(mesh, triangle_vertices);
+        mesh_pushFaces(mesh, triangle_faces);
+        for(int i = 0; i < mesh->vertices.size; i++){
+                glm_vec3_normalize(mesh->vertices.array[i]); // WARNING TODO Wrong normals
+        }
+        mesh_pushNormals(mesh, mesh->vertices);
+
+        for(int i = 0; i < subdivision_level; i++){
+                mesh_subdivide(mesh);
+        }
 }

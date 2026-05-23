@@ -16,11 +16,13 @@ void camera_copy_position(vec3 dest);
 void camera_move_to_origin();
 void camera_change_up(vec3 direction);
 void renderer_set_camera_world_pos(vec3d position);
+void renderer_set_camera_pos(vec3d position);
 
-void renderer_draw_model(const u32 modelID, vec3d position, vec3 scale);
+void renderer_draw_model(const u32 modelID, vec3d position, versor rotation, vec3 scale);
 u32  renderer_duplicate_model(u32 modelID);
 //u32 renderer_create_sphere();
 u32  renderer_get_sphere();
+u32  renderer_get_triangle();
 
 void renderer_draw();
 void renderer_draw_finish();

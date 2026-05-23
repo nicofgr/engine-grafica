@@ -15,13 +15,18 @@ u32 uranus;
 u32 neptune;
 u32 pluto;
 
-void init(){
-        vec3d position = {0.0f, 0.0f, 0.0f};
+u32 patch;
 
-        sun     = create_sphere(position,                        695700.0f);
+void init(){
+        engine_camera_position_set((vec3d){149.6e6, 6371.9f, 0.0f});
+        sun     = create_sphere((vec3d){0.0f, 0.0f, 0.0f},       695700.0f);
         mercury = create_sphere((vec3d){    57.9e6, 0.0f, 0.0f},   2439.7f);
         venus   = create_sphere((vec3d){   108.0e6, 0.0f, 0.0f},   6051.8f);
         earth   = create_sphere((vec3d){   149.6e6, 0.0f, 0.0f},   6371.8f);
+        patch   = create_patch((vec3d){149.59e6, 6371.9f, 0.0f}, 1000.0, 0, 0);
+        versor rotation;
+        glm_quat(rotation, glm_rad(90), 0.0, 1.0, 0.0);
+        rotate_patch(patch, rotation);
         /**
         mars    = create_sphere((vec3d){   228.0e6, 0.0f, 0.0f},   3389.5f);
         jupiter = create_sphere((vec3d){   778.0e6, 0.0f, 0.0f},  69886.0f);
@@ -58,6 +63,7 @@ void draw(){
         draw_object(mercury);
         draw_object(venus);
         draw_object(earth);
+        draw_all_patches();
         /**
         draw_object(mars);
         draw_object(jupiter);

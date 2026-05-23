@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "cglm/box.h"
+#include "cglm/quat.h"
 #include "cglm/vec3.h"
 #include "types.h"
 #include "constants.h"
@@ -15,19 +16,37 @@ int last_physics_time = 0;
 vec3d original_origin;
 //float speed = 300000/100.0; // speed of light/10
 float speed = (SPEED_OF_C/1000.0)/64;         // speed of light
+vec3d camera_global_pos;
 
 typedef struct Object{  // Model, Position, Rotation, Scale
-        u32   modelID;
-        vec3d position;
-        vec3  scale;
+        u32    modelID;
+        vec3d  position; // Relative to whatever origin ( NOT GLOBAL POSITION AND NOT RELATIVE TO CAMERA )
+        versor rotation;
+        vec3   scale;
 }Object;
+
+typedef struct Patch{
+        u32   objectID;
+        u32   LOD;
+        u32   parentID;
+        u32   hasChild;
+        u32   childID[4];
+        u32   isActive;  // CHANGE THIS TO THAT DOUBLE ARRAY THING
+}Patch;
 
 typedef struct ObjectArray{
         Object* array;
-        u32 size;
+        u32     size;
 }ObjectArray;
 
+typedef struct PatchArray{
+        Patch* array;
+        u32    size;
+}PatchArray;
+
+
 ObjectArray objectArray;
+PatchArray  patchArray; 
 
 
 u32 ObjectArray_Push(const u32 modelID, vec3d position, const vec3 scale){
@@ -40,6 +59,9 @@ u32 ObjectArray_Push(const u32 modelID, vec3d position, const vec3 scale){
         u32 index = objectArray.size;
         objectArray.array[index].modelID = modelID;
         vec3d_copy(position, objectArray.array[index].position);
+        versor rotation;
+        glm_quat_identity(rotation);
+        glm_quat_copy(rotation, objectArray.array[index].rotation);
         glm_vec3_copy((float*)scale,    objectArray.array[index].scale);
 
         objectArray.size++;
@@ -52,6 +74,32 @@ Object* ObjectArray_Get(const u32 objectID){
                 exit(0);
         }
         return &objectArray.array[objectID];
+}
+
+u32 PatchArray_Push(const u32 objectID, u32 parentID, u32 LOD){
+        if(patchArray.size == 0){
+                patchArray.array = (Patch*) malloc(sizeof(Patch));
+        }else{
+                patchArray.array = (Patch*) realloc(patchArray.array, sizeof(Patch)*(patchArray.size+1));
+        }
+
+        u32 index = patchArray.size;
+        patchArray.array[index].objectID = objectID;
+        patchArray.array[index].parentID = parentID;
+        patchArray.array[index].LOD      = LOD;
+        patchArray.array[index].hasChild = FALSE;
+        patchArray.array[index].isActive = TRUE;
+
+        patchArray.size++;
+        return index;
+}
+
+Patch* PatchArray_Get(const u32 patchID){
+        if(patchID >= patchArray.size){
+                fprintf(stderr, "[ERROR] patchID: %d out of bounds", patchID);
+                exit(0);
+        }
+        return &patchArray.array[patchID];
 }
 
 void video_init(){
@@ -82,6 +130,7 @@ void video_init(){
 }
 
 
+
 u32 create_material(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission){
         return renderer_create_material(ambient, diffuse, specular, shininess, emission);
 }
@@ -101,6 +150,19 @@ void object_update_model(u32 objectID, u32 modelID){
         objectArray.array[objectID].modelID = modelID;
 }
 
+void rotate_patch(u32 patchID, versor rotation){
+        u32 objectID = patchArray.array[patchID].objectID;
+        versor orig;
+        glm_quat_copy(objectArray.array[objectID].rotation, orig);
+        glm_quat_mul(rotation, orig, objectArray.array[objectID].rotation);
+}
+
+void rotate_object(u32 objectID, versor rotation){
+        versor orig;
+        glm_quat_copy(objectArray.array[objectID].rotation, orig);
+        glm_quat_mul(rotation, orig, objectArray.array[objectID].rotation);
+}
+
 void change_material(u32 objectID, u32 materialID){
         Object* object = ObjectArray_Get(objectID);
         if(check_duplicate_model(objectID) == TRUE){
@@ -113,7 +175,6 @@ void change_material(u32 objectID, u32 materialID){
 }
 
 u32 create_sphere(vec3d position,  float radius){
-
         u32  modelID  = renderer_get_sphere();
         vec3 scale    = (vec3){radius, radius, radius};
         u32  objectID = ObjectArray_Push(modelID, position, scale);
@@ -121,9 +182,185 @@ u32 create_sphere(vec3d position,  float radius){
         return objectID;
 }
 
+u32 create_patch(vec3d position, float scale, u32 parentID, u32 LOD){
+        u32  modelID  = renderer_get_triangle();
+        vec3 scale3   = (vec3){scale, scale, scale};
+        u32  objectID = ObjectArray_Push(modelID, position, scale3);
+        u32  patchID  = PatchArray_Push(objectID, parentID, LOD);
+        return patchID;
+}
+
+float distance_to_object(u32 objectID){
+        vec3 camera_pos;
+        camera_copy_position(camera_pos);
+
+        vec3 object_position;
+        vec3d object_position_d;
+        vec3d_copy(objectArray.array[objectID].position, object_position_d);
+        vec3d_to_vec3(object_position_d, object_position);
+
+        vec3 distance_vec;
+        glm_vec3_sub(object_position, camera_pos, distance_vec);
+        //printf("Obj pos: (%.2f %.2f %.2f)\n", object_position[0], object_position[1], object_position[2]);
+
+        //printf(" Dis Vec: (%.2f %.2f %.2f)\n", distance_vec[0], distance_vec[1], distance_vec[2]);
+        double distance = (distance_vec[0] * distance_vec[0]) + (distance_vec[1] * distance_vec[1]) + (distance_vec[2] * distance_vec[2]);
+        distance = sqrt(distance);
+        return distance;
+}
+
+void move_patch_local(u32 patchID, vec3d delta_pos){ // Rotate delta_pos to match patch rotation and add to patch position
+        u32 objectID = patchArray.array[patchID].objectID;
+        versor rotation;
+        glm_quat_copy(objectArray.array[objectID].rotation, rotation);
+        vec3 delta_pos_f;
+        vec3d_to_vec3(delta_pos, delta_pos_f);
+        glm_quat_rotatev(rotation, delta_pos_f, delta_pos_f);
+
+        vec3_to_vec3d(delta_pos_f, delta_pos);
+        vec3d_add(objectArray.array[objectID].position, delta_pos, objectArray.array[objectID].position);
+}
+
+void subdivide_patch(u32 patchID){
+        // Parent
+        patchArray.array[patchID].hasChild = TRUE;
+        patchArray.array[patchID].isActive = FALSE;
+        // Child
+        u32 LOD      = patchArray.array[patchID].LOD + 1;
+        u32 objectID = patchArray.array[patchID].objectID; // This is here just to get the scale and position
+                                                           //
+        versor parent_rotation;
+        glm_quat_copy(objectArray.array[objectID].rotation, parent_rotation);
+
+        float scale  = objectArray.array[objectID].scale[0];
+        scale *= 0.5;
+
+        vec3d position;
+        vec3d_copy(objectArray.array[objectID].position, position);
+
+        u32 child1 = create_patch(position, scale, patchID, LOD);
+        u32 child2 = create_patch(position, scale, patchID, LOD);
+        u32 child3 = create_patch(position, scale, patchID, LOD);
+        u32 child4 = create_patch(position, scale, patchID, LOD);
+
+        rotate_patch(child1, parent_rotation);
+        rotate_patch(child2, parent_rotation);
+        rotate_patch(child3, parent_rotation);
+        rotate_patch(child4, parent_rotation);
+
+
+        move_patch_local(child1, (vec3d){                0.0f,      scale, 0.0f}); // TOP
+        move_patch_local(child3, (vec3d){ scale*(0.5*sqrt(3)), -scale*0.5, 0.0f}); // LEFT
+        move_patch_local(child4, (vec3d){-scale*(0.5*sqrt(3)), -scale*0.5, 0.0f}); // RIGHT
+
+        versor upsidedown;
+        glm_quat(upsidedown, glm_rad(180), 1.0, 0.0, 0.0);
+        rotate_patch(child2, upsidedown);
+
+        patchArray.array[patchID].childID[0] = child2;
+        patchArray.array[patchID].childID[1] = child2;
+        patchArray.array[patchID].childID[2] = child2;
+        patchArray.array[patchID].childID[3] = child2;
+}
+
+void delete_patch(u32 patchID){
+        patchArray.array[patchID].isActive = FALSE;
+        u32 parentID = patchArray.array[patchID].parentID;
+        patchArray.array[parentID].isActive = TRUE;
+}
+
+void update_patches(){
+        u32 leave_counter = 0;
+        for(int i = 0; i < patchArray.size; i++){
+                u32 patchID = i;
+                u32 hasChild = patchArray.array[patchID].hasChild;
+                leave_counter += (1 - hasChild);
+                u32 LOD = patchArray.array[patchID].LOD;
+                if(LOD == 3){
+                        //continue;
+                }
+
+                u32 objectID = patchArray.array[patchID].objectID;
+                if(LOD != 0){  // If leave, use parent position
+                        u32 parentID = patchArray.array[patchID].parentID;
+                        objectID = patchArray.array[parentID].objectID;
+                }
+                float distance = distance_to_object(objectID);
+                printf("distance: %f\n", distance);
+
+                if(distance > 4000 && LOD == 0){
+                        puts("Cond 1");
+                        patchArray.array[patchID].isActive = TRUE;
+                        continue;
+                }
+                if(4000 >= distance && distance > 3000 && LOD == 1){
+                        patchArray.array[patchID].isActive = TRUE;
+                        continue;
+                }
+                if(3000 >= distance && distance > 2000 && LOD == 2){
+                        patchArray.array[patchID].isActive = TRUE;
+                        continue;
+                }
+                if(2000 >= distance && distance > 1000 && LOD == 3){
+                        patchArray.array[patchID].isActive = TRUE;
+                        continue;
+                }
+                if(1000 >= distance && distance >    0 && LOD == 4){
+                        patchArray.array[patchID].isActive = TRUE;
+                        continue;
+                }
+                if(hasChild == TRUE){  // Looking only at leaves
+                        continue;
+                }
+                // Subdivision cases
+                if(distance <= 4000 && LOD == 0){
+                        puts("Cond 2");
+                        subdivide_patch(patchID);
+                        continue;
+                }
+                if(distance <= 3000 && LOD == 1){
+                        puts("Cond 3");
+                        subdivide_patch(patchID);
+                        continue;
+                }
+                if(distance <= 2000 && LOD == 2){
+                        puts("Cond 4");
+                        subdivide_patch(patchID);
+                        continue;
+                }
+                if(distance <= 1000 && LOD == 3){
+                        puts("Cond 5");
+                        subdivide_patch(patchID);
+                        continue;
+                }
+                delete_patch(patchID);
+        }
+        printf("nPatches: %d\n", patchArray.size);
+        printf("nLeaves:  %d\n", leave_counter);
+        puts("");
+}
+
+void draw_all_patches(){
+        for(int i = 0; i < patchArray.size; i++){
+                if(patchArray.array[i].isActive == TRUE){
+                        draw_object(patchArray.array[i].objectID);  // Draws only the leaves nodes
+                        continue;
+                }
+                if(patchArray.array[i].isActive == FALSE){
+                        continue;
+                }
+                if(patchArray.array[i].hasChild == FALSE){
+                        draw_object(patchArray.array[i].objectID);  // Draws only the leaves nodes
+                }
+        }
+}
+
+u32 create_patch_sphere(vec3d position, float radius){
+}
+
 void draw_object(u32 objectID){
         Object* object = ObjectArray_Get(objectID);
-        renderer_draw_model(object->modelID, object->position, object->scale);
+        renderer_draw_model(object->modelID, object->position, object->rotation, object->scale);
 }
 
 void move_object(u32 objectID, vec3d displacement){
@@ -141,6 +378,10 @@ void print_position(u32 objectID){
 
 void camera_position_get(vec3 dest){
         camera_copy_position(dest);
+}
+
+void engine_camera_position_set(vec3d position){
+        renderer_set_camera_pos(position);
 }
 
 void object_position_copy(u32 objectID, vec3d dest){
@@ -234,7 +475,6 @@ void move_origin(vec3d newOrigin){
 
 float delta_time = 1.0/TARGET_PPS;
 float counter = 0;
-vec3d camera_global_pos;
 void engine_fixed_update(Engine engine){
         // MOVE ORIGIN
         vec3 camPosf;
@@ -259,8 +499,10 @@ void engine_fixed_update(Engine engine){
         renderer_set_camera_world_pos(camera_global_pos);
 
         engine.update();
-        counter += delta_time;
 
+        update_patches();
+
+        counter += delta_time;
 }
 
 void engine_draw(Engine engine){
@@ -330,8 +572,6 @@ void engine_quit(){
         free(objectArray.array);
         renderer_quit();
 }
-
-int step;
 
 void engine_run(Engine engine){
         int quit = FALSE;
