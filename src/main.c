@@ -25,7 +25,7 @@ void init(){
         earth   = create_sphere((vec3d){   149.6e6, 0.0f, 0.0f},   6371.8f);
         patch   = create_patch((vec3d){149.59e6, 6371.9f, 0.0f}, 1000.0, 0, 0);
         versor rotation;
-        glm_quat(rotation, glm_rad(90), 0.0, 1.0, 0.0);
+        glm_quat(rotation, glm_rad(80), 0.0, 1.0, 0.0);
         rotate_patch(patch, rotation);
         /**
         mars    = create_sphere((vec3d){   228.0e6, 0.0f, 0.0f},   3389.5f);

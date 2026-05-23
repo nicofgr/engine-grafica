@@ -157,6 +157,13 @@ void rotate_patch(u32 patchID, versor rotation){
         glm_quat_mul(rotation, orig, objectArray.array[objectID].rotation);
 }
 
+void rotate_patch_local(u32 patchID, versor rotation){
+        u32 objectID = patchArray.array[patchID].objectID;
+        versor orig;
+        glm_quat_copy(objectArray.array[objectID].rotation, orig);
+        glm_quat_mul(orig, rotation, objectArray.array[objectID].rotation);
+}
+
 void rotate_object(u32 objectID, versor rotation){
         versor orig;
         glm_quat_copy(objectArray.array[objectID].rotation, orig);
@@ -248,19 +255,18 @@ void subdivide_patch(u32 patchID){
         rotate_patch(child3, parent_rotation);
         rotate_patch(child4, parent_rotation);
 
-
         move_patch_local(child1, (vec3d){                0.0f,      scale, 0.0f}); // TOP
         move_patch_local(child3, (vec3d){ scale*(0.5*sqrt(3)), -scale*0.5, 0.0f}); // LEFT
         move_patch_local(child4, (vec3d){-scale*(0.5*sqrt(3)), -scale*0.5, 0.0f}); // RIGHT
 
         versor upsidedown;
-        glm_quat(upsidedown, glm_rad(180), 1.0, 0.0, 0.0);
-        rotate_patch(child2, upsidedown);
+        glm_quat(upsidedown, glm_rad(180), 0.0, 0.0, 1.0);
+        rotate_patch_local(child2, upsidedown);
 
-        patchArray.array[patchID].childID[0] = child2;
+        patchArray.array[patchID].childID[0] = child1;
         patchArray.array[patchID].childID[1] = child2;
-        patchArray.array[patchID].childID[2] = child2;
-        patchArray.array[patchID].childID[3] = child2;
+        patchArray.array[patchID].childID[2] = child3;
+        patchArray.array[patchID].childID[3] = child4;
 }
 
 void delete_patch(u32 patchID){
