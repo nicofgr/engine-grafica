@@ -18,6 +18,9 @@ u32  create_patch(vec3d position, float scale, u32 parentID, u32 LOD);
 void draw_all_patches();
 void rotate_patch(u32 patchID, versor rotation);
 
+u32 create_patchtree(vec3d position, float scale, u32 maxLOD);
+void draw_patchtree();
+
 void draw_object(u32 object);
 void move_object(u32 objectID, vec3d position);
 void object_position_copy(u32 objectID, vec3d dest);

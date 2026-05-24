@@ -69,6 +69,9 @@ static inline void vec3d_zero(vec3d v){
         v[1] = 0;
         v[2] = 0;
 }
+static inline void vec3d_print(vec3d vec){
+        printf("(%.2f %.2f %.2f)\n", vec[0], vec[1], vec[2]);
+}
 
 
 #endif
