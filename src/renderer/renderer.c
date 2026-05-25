@@ -7,12 +7,12 @@
 #include "constants.h"
 #include "renderer/shader.h"
 #include "renderer/text.h"
+#include "model.h"
 
 #include <cglm/cglm.h>
 #include <glad/glad.h>
 
 u32 is_post_processing = GL_FALSE;
-
 
 GLuint shaderProgram;
 GLuint textShader;
@@ -31,84 +31,41 @@ versor qCamera;
 float frustrumNear = 0.1;
 float frustrumFar = 1e12;
 
-// MODEL
-typedef struct Model{ // Meshes, texture_color_buffers, materials, rig, shaders, uv mapping
-        // Mesh
+typedef struct VAO{
         GLuint VAO;
         u32    nFaces;
-        // Material
-        u32 materialID;
-}Model;
+}VAO;
 
-typedef struct ModelArray{
-        Model* array;
-        u32     size;
-}ModelArray;
+typedef struct VAO_Array{
+        VAO* array;
+        u32  size;
+}VAO_Array;
 
-ModelArray modelArray;
+VAO_Array VAO_array;
 
-// MATERIAL
-typedef struct Material{
-        Color_RGB ambient;
-        Color_RGB diffuse;
-        Color_RGB specular;
-        float     shininess;
-        Color_RGB emission;
-}Material;
-
-typedef struct MaterialArray{
-        Material* array;
-        u32       size;
-}MaterialArray;
-
-MaterialArray materialArray;
 
 // PROTOTYPES
 u32 renderer_create_sphere();
 u32 renderer_create_triangle(u32);
 
 // DEFINITIONS
-static u32 modelArray_push(GLuint VAO, u32 nFaces, u32 materialID){
-        if(modelArray.size == 0){
-                modelArray.array = (Model*) malloc(sizeof(Model));
+static u32 VAOArray_push(GLuint VAO_ID, u32 nFaces){
+        if(VAO_array.size == 0){
+                VAO_array.array = (VAO*) malloc(sizeof(VAO));
         }else{
-                modelArray.array = (Model*) realloc(modelArray.array, sizeof(Model)*(modelArray.size+1));
+                VAO_array.array = (VAO*) realloc(VAO_array.array, sizeof(VAO)*(VAO_array.size+1));
         }
-        u32 index = modelArray.size;
-        modelArray.array[index].VAO        = VAO;
-        modelArray.array[index].nFaces     = nFaces;
-        modelArray.array[index].materialID = materialID;
-        modelArray.size++;
+        u32 index = VAO_array.size;
+        VAO_array.array[index].VAO        = VAO_ID;
+        VAO_array.array[index].nFaces     = nFaces;
+        VAO_array.size++;
         return index;
 }
 
-static Model modelArray_Get(u32 modelID){
-        return modelArray.array[modelID];
+static VAO VAOArray_Get(u32 VAO_ID){
+        return VAO_array.array[VAO_ID];
 }
 
-static u32 materialArray_push(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission){
-        if(materialArray.size == 0){
-                materialArray.array = (Material*) malloc(sizeof(Material));
-        }else{
-                materialArray.array = (Material*) realloc(materialArray.array, sizeof(Material)*(materialArray.size+1));
-        }
-        u32 index = materialArray.size;
-        materialArray.array[index].ambient   = ambient;
-        materialArray.array[index].diffuse   = diffuse;
-        materialArray.array[index].specular  = specular;
-        materialArray.array[index].shininess = shininess;
-        materialArray.array[index].emission  = emission;
-        materialArray.size++;
-        return index;
-}
-
-static Material materialArray_Get(u32 materialID){
-        if(materialID >= materialArray.size){
-                fprintf(stderr, "[ERROR] materialID (%d) greater than materialArray size (%d)\n", materialID, materialArray.size);
-                exit(0);
-        }
-        return materialArray.array[materialID];
-}
 
 static void compileShaders(){
         shaderProgram = shCreateShaderProgram("shaders/simple_shader.vert", "shaders/simple_shader.frag");
@@ -116,7 +73,6 @@ static void compileShaders(){
         pointShader   = shCreateShaderProgram( "shaders/point_shader.vert",  "shaders/point_shader.frag");
         post_shader   = shCreateShaderProgram("shaders/post_processing.vert", "shaders/post_processing.frag");
 }
-
 
 //int vertexLightLocation;
 //int lightPosLocation;
@@ -327,8 +283,6 @@ static void setup_shaders(){
         points_setup();
         post_processing_setup();
 
-        modelArray.array = NULL;
-        modelArray.size  = 0;
 }
 
 vec3 light_position = {0.0f, 0.0f, 0.0f};
@@ -359,12 +313,12 @@ void renderer_init(){
         // FreeType
         setup_text();
 
+        // Model
+        model_setup();
+
         // Standard models (sphere, quad, square, etc)
         renderer_create_sphere();
         renderer_create_triangle(1);
-
-        // Standard material
-        materialArray_push(color.gray, color.gray, color.gray, 32.0f, color.black);
 
         // Camera rotation quaternion initialization
         glm_quat_for((vec3){-1.0f, 0.0f, 0.0f}, (vec3){0.0f, 1.0f, 0.0f}, qCamera);
@@ -375,7 +329,8 @@ void renderer_init(){
 
 
 void renderer_quit(){
-        free(modelArray.array);
+        model_freeall();
+        free(VAO_array.array);
 }
 
 GLint    is_available = GL_TRUE;
@@ -394,7 +349,7 @@ void renderer_draw(){
         glClearColor(0.1, 0.1, 0.1, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
+        //glEnable(GL_CULL_FACE);
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
         glCullFace(GL_BACK);
@@ -601,12 +556,13 @@ void camera_print_coords(){
 void renderer_draw_model(const u32 modelID, vec3d position_double, versor rotation, vec3 scale){
         vec3 position;
         vec3d_to_vec3(position_double, position);
-        Model    model    = modelArray_Get(modelID);
-        Material material = materialArray_Get(model.materialID);
+        u32 VAO_ID = model_get_meshID(modelID);
+        VAO vao    = VAOArray_Get(VAO_ID);
+        Material material = materialArray_Get(model_get_materialID(modelID));
 
         //renderer_draw_point_setup();
         glUseProgram(pointShader);
-        renderer_draw_point(position, color.star, scale[0]*2);
+        //renderer_draw_point(position, color.star, scale[0]*2);
 
 
         // IF CLOSE DO THIS
@@ -633,8 +589,8 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, versor rotati
         glm_perspective(glm_rad(FOV), (float)SCREEN_WIDTH/(float)SCREEN_HEIGHT, frustrumNear, frustrumFar, proj);
 
 
-        glUniform3f(ambientLoc, material.ambient.R, material.ambient.G, material.ambient.B);
-        glUniform3f(diffuseLoc, material.diffuse.R, material.diffuse.G, material.diffuse.B);
+        glUniform3f(ambientLoc,  material.ambient.R,  material.ambient.G,  material.ambient.B);
+        glUniform3f(diffuseLoc,  material.diffuse.R,  material.diffuse.G,  material.diffuse.B);
         glUniform3f(specularLoc, material.specular.R, material.specular.G, material.specular.B);
         glUniform1f(shininessLoc, material.shininess);
         glUniform3f(emissionLoc, material.emission.R, material.emission.G, material.emission.B);
@@ -646,34 +602,28 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, versor rotati
         glUniformMatrix4fv(projLocation, 1, GL_FALSE, (const float*)proj);
         glUniform1f(sizeMultiplier, 1);
 
-        glBindVertexArray(model.VAO);
-        glDrawElements(GL_TRIANGLES, model.nFaces, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(vao.VAO);
+        glDrawElements(GL_TRIANGLES, vao.nFaces, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
 }
 
 
 u32 renderer_duplicate_model(u32 modelID){
-        Model duplicate = modelArray_Get(modelID);
-        u32 newID = modelArray_push(duplicate.VAO, duplicate.nFaces, duplicate.materialID);
+        u32 newID = model_duplicate(modelID);
         return newID;
 }
 
 void renderer_change_material(u32 modelID, u32 materialID){
-        if(materialID >= materialArray.size){
-                fprintf(stderr,"[ERROR] Material %d is not on materialArray", materialID);
-                exit(1);
-        }
-        modelArray.array[modelID].materialID = materialID;
+        model_change_material(modelID, materialID);
 }
 
 u32 renderer_create_material(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission){
         return materialArray_push(ambient, diffuse, specular, shininess, emission);
 }
 
-GLuint renderer_create_VAO(const Mesh mesh){ // Create model from mesh
+u32 renderer_create_VAO(const Mesh mesh){ // Create model from mesh
         GLuint VAO;
         GLuint VBO;
         GLuint EBO;
@@ -702,12 +652,14 @@ GLuint renderer_create_VAO(const Mesh mesh){ // Create model from mesh
         glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-        return VAO;
+
+        u32 VAO_ID = VAOArray_push(VAO, mesh.faces.size*3);
+        return VAO_ID;
 }
 
-u32 renderer_create_model(Mesh mesh, u32 materialID){
-        GLuint VAO = renderer_create_VAO(mesh);
-        u32 modelID = modelArray_push(VAO, mesh.faces.size*3, materialID);
+static u32 renderer_create_model(Mesh mesh, u32 materialID){ // TODO Change to accept multiple meshes
+        u32 VAO_ID  = renderer_create_VAO(mesh);
+        u32 modelID = model_create(&VAO_ID, 1, materialID);
         return modelID;
 }
 
@@ -776,8 +728,5 @@ void render_text(const char* text, float x, float y, const float scale, const Co
         }
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D,0);
-}
-
-void renderer_draw_quad(float x1, float x2, float y1, float y2){
 }
 
