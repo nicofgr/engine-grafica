@@ -1,7 +1,5 @@
-#include "cglm/vec3.h"
 #include "engine.h"
 #include "constants.h"
-#include "renderer/renderer.h"
 #include "types.h"
 
 u32 sun;
@@ -15,15 +13,18 @@ u32 uranus;
 u32 neptune;
 u32 pluto;
 
-u32 patch;
+u32** patchSphere = NULL;
 
 void init(){
         engine_camera_position_set((vec3d){149.6e6, 6371.9f, 0.0f});
-        sun     = create_sphere((vec3d){0.0f, 0.0f, 0.0f},       695700.0f);
+        engine_camera_position_set((vec3d){0.0f, 0.0f, 0.0f});
+        //sun     = create_sphere((vec3d){0.0f, 0.0f, 0.0f},       695700.0f);
+        sun     = create_sphere((vec3d){0.0f, 0.0f, 0.0f},       1.0f);
         mercury = create_sphere((vec3d){    57.9e6, 0.0f, 0.0f},   2439.7f);
         venus   = create_sphere((vec3d){   108.0e6, 0.0f, 0.0f},   6051.8f);
         earth   = create_sphere((vec3d){   149.6e6, 0.0f, 0.0f},   6371.8f);
-        create_patchtree((vec3d){149.59e6, 6371.9f, 0.0f}, 1000.0, 1);
+        //patchSphere = create_patch_sphere((vec3d){0.0f, 0.0f, 0.0f}, 1.0f);
+        patchSphere = create_patch_sphere();
         //versor rotation;
         //glm_quat(rotation, glm_rad(80), 0.0, 1.0, 0.0);
         //rotate_patch(patch, rotation);
@@ -63,7 +64,7 @@ void draw(){
         draw_object(mercury);
         draw_object(venus);
         draw_object(earth);
-        draw_patchtree();
+        draw_patch_sphere(patchSphere);
         /**
         draw_object(mars);
         draw_object(jupiter);

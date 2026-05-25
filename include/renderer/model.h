@@ -4,11 +4,11 @@
 #include "types.h"
 
 // MODEL
-u32 model_create(u32* meshID, u32 n_meshes, u32 materialID);
+u32  model_create(u32* meshID, u32 n_meshes, u32 materialID);
 void model_change_material(u32 modelID, u32 materialID);
-u32 model_get_meshID(u32 modelID);
-u32 model_get_materialID(u32 modelID);
-u32 model_duplicate(u32 modelID);
+u32  model_get_meshID(u32 modelID);
+u32  model_get_materialID(u32 modelID);
+u32  model_duplicate(u32 modelID);
 
 void model_setup();
 void model_freeall();

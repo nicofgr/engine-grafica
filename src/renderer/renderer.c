@@ -7,7 +7,7 @@
 #include "constants.h"
 #include "renderer/shader.h"
 #include "renderer/text.h"
-#include "model.h"
+#include "renderer/model.h"
 
 #include <cglm/cglm.h>
 #include <glad/glad.h>
@@ -346,10 +346,10 @@ void renderer_draw(){
         if(is_post_processing == TRUE){
                 glBindFramebuffer(GL_FRAMEBUFFER, FBO);
         }
-        glClearColor(0.1, 0.1, 0.1, 1.0);
+        glClearColor(0.0, 0.0, 0.05, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        //glEnable(GL_CULL_FACE);
+        glEnable(GL_CULL_FACE);
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
         glCullFace(GL_BACK);

@@ -16,10 +16,11 @@ int last_frame_time   = 0;
 int last_physics_time = 0;
 vec3d original_origin;
 //float speed = 300000/100.0; // speed of light/10
-float speed = (SPEED_OF_C/1000.0)/64;         // speed of light
+//float speed = (SPEED_OF_C/1000.0)/64;         // speed of light
+float speed = 10.0;
 vec3d camera_global_pos;
 
-typedef struct Object{  // Model, Position, Rotation, Scale
+typedef struct Object{   // Model, Position, Rotation, Scale
         u32    modelID;
         vec3d  position; // Relative to whatever origin ( NOT GLOBAL POSITION AND NOT RELATIVE TO CAMERA )
         versor rotation;
@@ -31,9 +32,7 @@ typedef struct ObjectArray{
         u32     size;
 }ObjectArray;
 
-
 ObjectArray objectArray;
-
 
 u32 ObjectArray_Push(const u32 modelID, vec3d position, const vec3 scale){
         if(objectArray.size == 0){
@@ -153,14 +152,13 @@ void move_object_local(u32 objectID, vec3d delta_pos){
         vec3d_add(objectArray.array[objectID].position, delta_pos, objectArray.array[objectID].position);
 }
 
-#define MAXLOD 5
-u32* patchTree;
-u32 create_patchtree(vec3d position, float scale, u32 maxLOD){
+#define MAXLOD 0
+u32* create_patchtree(vec3d position, float scale, u32 maxLOD){
         maxLOD = MAXLOD;
         u32 size = (pow(4,maxLOD+1)-1)/3;
         printf("[PatchTree_init]\n");
         printf("Generating quadtree of size %d\n", size);
-        patchTree = (u32*)malloc(sizeof(u32)*size);
+        u32* patchTree = (u32*)malloc(sizeof(u32)*size);
 
         // Root patch
         u32  modelID  = renderer_get_triangle();
@@ -208,7 +206,7 @@ u32 create_patchtree(vec3d position, float scale, u32 maxLOD){
         }
         printf("patchtree created!\n");
         fflush(stdout);
-        return objectID;
+        return patchTree;
 }
 
 
@@ -231,7 +229,7 @@ float distance_to_object(u32 objectID){
         return distance;
 }
 
-void patch_subdivide(u32 patchID, u32 lod){
+void patch_subdivide(u32* patchTree, u32 patchID, u32 lod){
         if(lod == MAXLOD){ // Cant subdivide more
                 draw_object(patchTree[patchID]);
                 return;
@@ -241,14 +239,18 @@ void patch_subdivide(u32 patchID, u32 lod){
                 u32 childObjectID = patchTree[childID];
                 float distance = distance_to_object(childObjectID);
                 if(distance < (5000-lod*1000)){
-                        patch_subdivide(childID, lod+1);
+                        patch_subdivide(patchTree, childID, lod+1);
                         continue;
                 }
                 draw_object(patchTree[childID]);
         }
 }
 
-void draw_patchtree(){
+void draw_patchtree(u32* patchTree){
+        if(patchTree == NULL){
+                fprintf(stderr,"[ERROR][draw_patchtree] The pointer has value NULL\n");
+                exit(0);
+        }
         float distance = distance_to_object(patchTree[0]);
         for(int i = 1; i < MAXLOD; i++){ // Tree level
                 for(int j = 0; j < pow(4,i); j++){
@@ -256,13 +258,70 @@ void draw_patchtree(){
                 }
         }
         if(distance < 5000){
-                patch_subdivide(0, 0);
+                patch_subdivide(patchTree, 0, 0);
                 return;
         }
         draw_object(patchTree[0]);
 }
 
-u32 create_patch_sphere(vec3d position, float radius){
+void draw_patch_sphere(u32** patchSphere){
+        for(int i = 0; i < 20; i++){
+                if(patchSphere[i] == NULL) continue;
+                draw_patchtree(patchSphere[i]);
+        }
+}
+
+u32** create_patch_sphere(){ // TODO Use the icosahedron mesh data to simplify this function
+
+        u32** patchSphere = (u32**) malloc(sizeof(u32*) * 20);
+        for(int i = 0; i < 20; i++){
+                patchSphere[i] = NULL;
+        }
+        for(int i = 0; i < 20; i++){
+                //patchSphere[i] = create_patchtree((vec3d){1.0f * i, 0.0f, GOLDEN_RATIO}, 1.0, 1);
+        }
+
+        // POSITIONS
+        float den = 1.0/(3.0 * sqrt(GOLDEN_RATIO+2));
+        float cst1 = GOLDEN_RATIO*den;       // 0.53934... 0.28355...
+        float cst2 = (GOLDEN_RATIO+1)*den;   // 0.87268... 0.45879...
+        float cst3 = (1+2*GOLDEN_RATIO)*den; // 1.41202... 0.74234...
+        float scale = 0.5;
+        patchSphere[0]  = create_patchtree((vec3d){ cst1,  0.0f,  cst3}, scale, 1);
+        patchSphere[1]  = create_patchtree((vec3d){ cst2,  cst2,  cst2}, scale, 1);
+        patchSphere[2]  = create_patchtree((vec3d){ 0.0f,  cst3,  cst1}, scale, 1);
+        patchSphere[3]  = create_patchtree((vec3d){-cst2,  cst2,  cst2}, scale, 1);
+        patchSphere[4]  = create_patchtree((vec3d){-cst1,  0.0f,  cst3}, scale, 1);
+        patchSphere[5]  = create_patchtree((vec3d){ cst1,  0.0f, -cst3}, scale, 1);
+        patchSphere[6]  = create_patchtree((vec3d){ cst2, -cst2, -cst2}, scale, 1);
+        patchSphere[7]  = create_patchtree((vec3d){ 0.0f, -cst3, -cst1}, scale, 1);
+        patchSphere[8]  = create_patchtree((vec3d){-cst2, -cst2, -cst2}, scale, 1);
+        patchSphere[9]  = create_patchtree((vec3d){-cst1,  0.0f, -cst3}, scale, 1);
+        patchSphere[10] = create_patchtree((vec3d){ cst2,  cst2, -cst2}, scale, 1);
+        patchSphere[11] = create_patchtree((vec3d){ cst3,  cst1,  0.0f}, scale, 1);
+        patchSphere[12] = create_patchtree((vec3d){ cst3, -cst1,  0.0f}, scale, 1);
+        patchSphere[13] = create_patchtree((vec3d){ cst2, -cst2,  cst2}, scale, 1);
+        patchSphere[14] = create_patchtree((vec3d){ 0.0f, -cst3,  cst1}, scale, 1);
+        patchSphere[15] = create_patchtree((vec3d){-cst2, -cst2,  cst2}, scale, 1);
+        patchSphere[16] = create_patchtree((vec3d){-cst3, -cst1,  0.0f}, scale, 1);
+        patchSphere[17] = create_patchtree((vec3d){-cst3,  cst1,  0.0f}, scale, 1);
+        patchSphere[18] = create_patchtree((vec3d){-cst2,  cst2, -cst2}, scale, 1);
+        patchSphere[19] = create_patchtree((vec3d){ 0.0f,  cst3, -cst1}, scale, 1);
+
+        // ROTATIONS
+        for(int i = 0; i < 20; i++){ // WARNING at the current state this only works at origin and LOD 0
+                u32 objectID = patchSphere[i][0];
+                vec3d position;
+                vec3d_copy(objectArray.array[patchSphere[i][0]].position, position);
+                vec3 normal;
+                vec3d_to_vec3(position, normal);
+                versor rotation;
+                glm_quat_from_vecs((vec3){0.0f, 0.0f, 1.0f},normal,rotation);
+                rotate_object_local(objectID, rotation);
+                glm_quatv(rotation, glm_rad(30), (vec3){0.0f, 0.0f, 1.0f});
+                rotate_object_local(objectID, rotation);
+        }
+        return patchSphere;
 }
 
 void draw_object(u32 objectID){

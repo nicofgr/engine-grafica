@@ -1,5 +1,5 @@
 
-#include "model.h"
+#include "renderer/model.h"
 #include "constants.h"
 
 // MODEL
@@ -17,7 +17,6 @@ typedef struct ModelArray{
 }ModelArray;
 
 ModelArray modelArray;
-
 
 typedef struct MaterialArray{
         Material* array;
@@ -118,4 +117,5 @@ Material materialArray_Get(u32 materialID){
         return materialArray.array[materialID];
 }
 
+// Other stuff ==============================================
 

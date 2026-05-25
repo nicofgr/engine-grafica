@@ -199,6 +199,19 @@ void mesh_create_icosahedron(Mesh* mesh){
         }
         mesh_pushNormals(mesh, mesh->vertices);
         //mesh_printData(*mesh);
+        
+        printf("Face center positions \n");
+        for(int i = 0; i < icosahedron_faces.size; i++){
+                vec3 sum_vec;
+                u32 vert1_id = icosahedron_faces.array[(i*3)];
+                u32 vert2_id = icosahedron_faces.array[(i*3) + 1];
+                u32 vert3_id = icosahedron_faces.array[(i*3) + 2];
+                glm_vec3_add(mesh->vertices.array[vert1_id], mesh->vertices.array[vert2_id], sum_vec);
+                glm_vec3_add(mesh->vertices.array[vert3_id], sum_vec, sum_vec);
+                glm_vec3_divs(sum_vec, 3, sum_vec);
+                printf("[%2d](%.2f %.2f %.2f)\n",i, sum_vec[0], sum_vec[1], sum_vec[2]);
+        }
+        puts("");
 }
 
 void mesh_subdivide(Mesh* mesh){
