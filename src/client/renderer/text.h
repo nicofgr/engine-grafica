@@ -4,7 +4,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "types.h"
+#include "../../shared/types.h"
 
 typedef struct Character{
         u32  TextureID;

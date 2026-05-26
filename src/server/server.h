@@ -1,8 +1,8 @@
-#ifndef ENGINE_H
-#define ENGINE_H
+#ifndef SERVER_H
+#define SERVER_H
 
 #include <stdint.h>
-#include "types.h"
+#include "../shared/types.h"
 
 typedef struct Engine{
         void (*init)();

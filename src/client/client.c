@@ -1,9 +1,9 @@
-#include "engine.h"
+#include "client.h"
 #include "cglm/box.h"
 #include "cglm/quat.h"
 #include "cglm/vec3.h"
-#include "types.h"
-#include "constants.h"
+#include "../shared/types.h"
+#include "../shared/constants.h"
 #include "renderer/renderer.h"
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>

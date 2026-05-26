@@ -2,8 +2,8 @@
 #define RENDERER_H
 
 #include <SDL2/SDL.h>
-#include <types.h>
-#include <mesh.h>
+#include "../../shared/types.h"
+#include "../mesh.h"
 
 void renderer_init();
 void renderer_quit();

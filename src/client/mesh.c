@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include "cglm/vec3.h"
-#include "constants.h"
-#include "types.h"
+#include "../shared/constants.h"
+#include "../shared/types.h"
 #include <string.h>
 
 void mesh_free(Mesh* mesh){

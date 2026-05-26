@@ -1,13 +1,13 @@
-#include "renderer/renderer.h"
+#include "renderer.h"
 #include "cglm/cam.h"
 #include "cglm/quat.h"
 #include "cglm/vec3.h"
-#include "types.h"
-#include "mesh.h"
-#include "constants.h"
-#include "renderer/shader.h"
-#include "renderer/text.h"
-#include "renderer/model.h"
+#include "../../shared/types.h"
+#include "../../shared/constants.h"
+#include "../mesh.h"
+#include "shader.h"
+#include "text.h"
+#include "model.h"
 
 #include <cglm/cglm.h>
 #include <glad/glad.h>
@@ -68,10 +68,10 @@ static VAO VAOArray_Get(u32 VAO_ID){
 
 
 static void compileShaders(){
-        shaderProgram = shCreateShaderProgram("shaders/simple_shader.vert", "shaders/simple_shader.frag");
-        textShader    = shCreateShaderProgram(         "shaders/text.vert",          "shaders/text.frag");
-        pointShader   = shCreateShaderProgram( "shaders/point_shader.vert",  "shaders/point_shader.frag");
-        post_shader   = shCreateShaderProgram("shaders/post_processing.vert", "shaders/post_processing.frag");
+        shaderProgram = shCreateShaderProgram("assets/shaders/simple_shader.vert", "assets/shaders/simple_shader.frag");
+        textShader    = shCreateShaderProgram(         "assets/shaders/text.vert",          "assets/shaders/text.frag");
+        pointShader   = shCreateShaderProgram( "assets/shaders/point_shader.vert",  "assets/shaders/point_shader.frag");
+        post_shader   = shCreateShaderProgram("assets/shaders/post_processing.vert", "assets/shaders/post_processing.frag");
 }
 
 //int vertexLightLocation;

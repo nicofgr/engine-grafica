@@ -1,4 +1,4 @@
-#include "renderer/shader.h"
+#include "shader.h"
 
 #include <glad/glad.h>
 #include <stdio.h>

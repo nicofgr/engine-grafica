@@ -1,4 +1,4 @@
-#include "renderer/text.h"
+#include "text.h"
 #include "freetype/freetype.h"
 #include <glad/glad.h>
 
@@ -47,8 +47,8 @@ void text_init(){
                 fprintf(stderr, "[ERROR][FREETYPE] Could not init freetype library\n");
                 exit(0);
         }
-        if(FT_New_Face(ft, "fonts/CodeNewRomanNerdFont-Regular.otf", 0, &face)){
-                fprintf(stderr, "[ERROR][FREETYPE] Failes do load font\n");
+        if(FT_New_Face(ft, "assets/fonts/CodeNewRomanNerdFont-Regular.otf", 0, &face)){
+                fprintf(stderr, "[ERROR][FREETYPE] Failed to load font\n");
                 exit(0);
         }
         FT_Set_Pixel_Sizes(face, 0, 48);

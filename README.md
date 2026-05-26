@@ -17,3 +17,13 @@ sudo apt install libfreetype6-dev
 ```bash
 sudo apt install -y libsdl2-2.0-0 libsdl2-dev libfreetype6-dev
 ```
+
+### GameNetworkingSockets
+
+mkdir build
+cd build
+cmake -G Ninja ..
+ninja
+
+cd ..
+sudo cmake --install build

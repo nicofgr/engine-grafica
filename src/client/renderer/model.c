@@ -1,6 +1,6 @@
 
-#include "renderer/model.h"
-#include "constants.h"
+#include "model.h"
+#include "../../shared/constants.h"
 
 // MODEL
 typedef struct Model{ // Meshes, texture_color_buffers, materials, rig, shaders, uv mapping

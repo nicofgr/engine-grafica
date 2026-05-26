@@ -1,7 +1,7 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "types.h"
+#include "../../shared/types.h"
 
 // MODEL
 u32  model_create(u32* meshID, u32 n_meshes, u32 materialID);
