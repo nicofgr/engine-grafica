@@ -5,13 +5,21 @@
 #include "types.h"
 #include <stdio.h>
 
-#include <GameNetworkingSockets/steam/steamnetworkingtypes.h>
+#include <GameNetworkingSockets/steam/steamnetworkingsockets.h>
 #include <GameNetworkingSockets/steam/steamnetworkingsockets_flat.h>
+#include <GameNetworkingSockets/steam/steamnetworkingtypes.h>
 #include <sys/types.h>
 
-// SERVER ==============================================================================
 HSteamNetPollGroup m_hPollGroup;
 ISteamNetworkingSockets* m_pInterface;
+
+
+
+void net_update(){
+        m_pInterface->RunCallbacks();
+}
+
+// SERVER ==============================================================================
 
 /**
 static ChatServer *s_pCallbackInstance;
@@ -36,20 +44,20 @@ void OnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *pInfo)
                                 // Locate the client.  Note that it should have been found, because this
                                 // is the only codepath where we remove clients (except on shutdown),
                                 // and connection change callbacks are dispatched in queue order.
-                                auto itClient = m_mapClients.find( pInfo->m_hConn );
-                                assert( itClient != m_mapClients.end() );
+                                //auto itClient = m_mapClients.find( pInfo->m_hConn );
+                               // assert( itClient != m_mapClients.end() );
 
                                 // Select appropriate log messages
                                 const char *pszDebugLogAction;
                                 if ( pInfo->m_info.m_eState == k_ESteamNetworkingConnectionState_ProblemDetectedLocally ){
                                         pszDebugLogAction = "problem detected locally";
-                                        sprintf( temp, "Alas, %s hath fallen into shadow.  (%s)", itClient->second.m_sNick.c_str(), pInfo->m_info.m_szEndDebug );
+                                        //sprintf( temp, "Alas, %s hath fallen into shadow.  (%s)", itClient->second.m_sNick.c_str(), pInfo->m_info.m_szEndDebug );
                                 }
                                 else{
                                         // Note that here we could check the reason code to see if
                                         // it was a "usual" connection or an "unusual" one.
                                         pszDebugLogAction = "closed by peer";
-                                        sprintf( temp, "%s hath departed", itClient->second.m_sNick.c_str() );
+                                        //sprintf( temp, "%s hath departed", itClient->second.m_sNick.c_str() );
                                 }
 
                                 // Spew something to our own log.  Note that because we put their nick
@@ -62,10 +70,10 @@ void OnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *pInfo)
                                         pInfo->m_info.m_szEndDebug
                                 );
 
-                                m_mapClients.erase( itClient );
+                                //m_mapClients.erase( itClient );
 
                                 // Send a message so everybody else knows what happened
-                                SendStringToAllClients( temp );
+                                //SendStringToAllClients( temp );
 			}else{
                                 assert( pInfo->m_eOldState == k_ESteamNetworkingConnectionState_Connecting );
                         }
@@ -83,7 +91,7 @@ void OnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *pInfo)
                 case k_ESteamNetworkingConnectionState_Connecting:
                 {
                         // This must be a new connection
-                        assert( m_mapClients.find( pInfo->m_hConn ) == m_mapClients.end() );
+                        //assert( m_mapClients.find( pInfo->m_hConn ) == m_mapClients.end() );
 
                         printf( "Connection request from %s", pInfo->m_info.m_szConnectionDescription );
 
@@ -116,11 +124,12 @@ void OnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *pInfo)
 
                         // Send them a welcome message
                         sprintf( temp, "Welcome, stranger.  Thou art known to us for now as '%s'; upon thine command '/nick' we shall know thee otherwise.", nick ); 
-                        SendStringToClient( pInfo->m_hConn, temp ); 
+                        //SendStringToClient( pInfo->m_hConn, temp ); 
 
                         // Also send them a list of everybody who is already connected
+                        /**
                         if ( m_mapClients.empty() ){
-                                SendStringToClient( pInfo->m_hConn, "Thou art utterly alone." ); 
+                                //SendStringToClient( pInfo->m_hConn, "Thou art utterly alone." ); 
                         }
                         else{
                                 sprintf( temp, "%d companions greet you:", (int)m_mapClients.size() ); 
@@ -136,8 +145,9 @@ void OnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *pInfo)
 				m_mapClients[ pInfo->m_hConn ];
 				SetClientNick( pInfo->m_hConn, nick );
 				break;
+                        }
+                        **/
                 }
-
                 case k_ESteamNetworkingConnectionState_Connected:
                         // We will get a callback immediately after accepting the connection.
                         // Since we are the server, we can ignore this, it's not news to us.
@@ -147,6 +157,27 @@ void OnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *pInfo)
                         // Silences -Wswitch
                         break;
         }
+}
+
+SteamNetworkingMicroseconds g_logTimeZero;
+static void DebugOutput( ESteamNetworkingSocketsDebugOutputType eType, const char *pszMsg ){
+	SteamNetworkingMicroseconds time = SteamNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
+	printf( "%10.6f %s\n", time*1e-6, pszMsg );
+	fflush(stdout);
+	if ( eType == k_ESteamNetworkingSocketsDebugOutputType_Bug ){
+		fflush(stdout);
+		fflush(stderr);
+		exit(1);
+	}
+}
+
+void net_init(){
+        SteamDatagramErrMsg errMsg;
+        if ( !GameNetworkingSockets_Init( nullptr, errMsg ) ){
+	        fprintf(stderr, "GameNetworkingSockets_Init failed.  %s", errMsg );
+        }
+        g_logTimeZero = SteamNetworkingUtils()->GetLocalTimestamp();
+        SteamNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput );
 }
 
 NetSocket net_listen(u_int16_t port){
@@ -165,20 +196,46 @@ NetSocket net_listen(u_int16_t port){
         // 2. Allow raw IP connections without Steam account authentication
         options[1].SetInt32(k_ESteamNetworkingConfig_IP_AllowWithoutAuth, 1);
         // 3. Simulate a realistic bad connection (5% packet loss) for engine testing
-        options[2].SetFloat(k_ESteamNetworkingConfig_FakePacketLoss_Send, 0.05f);
+        //options[2].SetFloat(k_ESteamNetworkingConfig_FakePacketLoss_Send, 0.05f);
 
-        m_hListenSock = m_pInterface->CreateListenSocketIP( ip_addr, 3, options);
+        m_hListenSock = m_pInterface->CreateListenSocketIP( ip_addr, 2, options);
 
         if( m_hListenSock == k_HSteamListenSocket_Invalid ){
-                fprintf(stderr, "𐄂 Failed to listen on port %d", port);
+                fprintf(stderr, "𐄂 Failed to listen on port %d\n", port);
+                exit(0);
         }
         m_hPollGroup = m_pInterface->CreatePollGroup();
         if ( m_hPollGroup == k_HSteamNetPollGroup_Invalid ){
-                fprintf(stderr, "𐄂 Failed to listen on port %d", port);
+                fprintf(stderr, "𐄂 Failed to listen on port %d\n", port);
+                exit(0);
         }
         printf( "✓ Server listening on port %d\n", port );
 
         return (NetSocket) m_hListenSock;
+}
+
+NetConn net_connect(u_int16_t port){
+        SteamNetworkingIPAddr server_addr;
+        HSteamNetConnection m_hConnection;
+        // Select instance to use.  For now we'll always use the default.
+        m_pInterface = SteamNetworkingSockets();
+
+        server_addr.Clear();
+        server_addr.ParseString("127.0.0.1");
+        server_addr.m_port = port;
+
+        // Start connecting
+        char szAddr[ SteamNetworkingIPAddr::k_cchMaxString ];
+        server_addr.ToString( szAddr, sizeof(szAddr), true );
+        printf( "Connecting to server at %s\n", szAddr );
+        SteamNetworkingConfigValue_t opt;
+        opt.SetPtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)OnConnectionStatusChanged );
+        m_hConnection = m_pInterface->ConnectByIPAddress( server_addr, 1, &opt );
+        if ( m_hConnection == k_HSteamNetConnection_Invalid ){
+                fprintf(stderr, "Failed to create connection\n" );
+                exit(0);
+        }
+        return m_hConnection;
 }
 
 // CLIENT ==============================================================================

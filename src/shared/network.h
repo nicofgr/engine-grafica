@@ -11,10 +11,15 @@ extern "C" {
 typedef uint32_t NetSocket;
 typedef uint32_t NetConn;
 
+// BOTH
+void net_init();
+void net_update();
+
 // SERVER
-NetSocket listen(u_int16_t port);
+NetSocket net_listen(u_int16_t port);
 
 // CLIENT
+NetConn net_connect(u_int16_t port);
 
 #ifdef __cplusplus
 }

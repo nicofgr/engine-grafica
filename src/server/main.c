@@ -1,6 +1,7 @@
 #include "server.h"
 #include "../shared/constants.h"
 #include "../shared/types.h"
+#include "../shared/network.h"
 
 u32 sun;
 u32 mercury;
@@ -83,6 +84,12 @@ Engine engine = {
                 };
 
 int main(int argc, char** argv) {
+        net_init();
+        NetSocket socket = net_listen(8080);
+        while(1){
+                net_update();
+        }
+
         //engine_run(engine);
         return 0;
 }

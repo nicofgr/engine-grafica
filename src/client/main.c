@@ -1,6 +1,7 @@
 #include "client.h"
 #include "../shared/constants.h"
 #include "../shared/types.h"
+#include "network.h"
 
 u32 sun;
 u32 mercury;
@@ -82,6 +83,9 @@ Engine engine = {
                 };
 
 int main(int argc, char** argv) {
+        net_init();
+        NetConn connection = net_connect(8080);
         engine_run(engine);
+        net_update();
         return 0;
 }
