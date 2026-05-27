@@ -5,6 +5,7 @@
 #include <cglm/cglm.h>
 
 typedef uint32_t u32;
+typedef uint64_t u64;
 typedef double vec3d[3];
 
 typedef struct Vec3_Array{

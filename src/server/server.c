@@ -1,8 +1,13 @@
+#define _POSIX_C_SOURCE 199309L
+
 #include "server.h"
 #include "cglm/quat.h"
 #include "cglm/vec3.h"
 #include "../shared/types.h"
 #include "../shared/constants.h"
+#include "../shared/network.h"
+#include <bits/time.h>
+#include <time.h>
 #include <stdio.h>
 
 int   last_frame_time   = 0;
@@ -328,14 +333,13 @@ void object_position_copy(u32 objectID, vec3d dest){
         vec3d_copy(objectArray.array[objectID].position, dest);
 }
 
-/**
 void engine_init(Engine engine) {
         vec3d_zero(original_origin);
-        video_init();
-        renderer_init();
+        net_init();
+        NetSocket socket = net_listen(8080);
+
         engine.init();
 }
-**/
 
 int mouseDeltaX;
 int mouseDeltaY;
@@ -387,23 +391,35 @@ void engine_fixed_update(Engine engine){
 
         counter += delta_time;
 }
+**/
 
 void engine_quit(){
+        net_shutdown();
         free(objectArray.array);
-        renderer_quit();
 }
 
-void engine_run(Engine engine){
+u64 get_ticks(){
+        u64 ticks;
+        struct timespec time;
+        clock_gettime(CLOCK_MONOTONIC, &time);
+        ticks  = (time.tv_sec * 1000);
+        ticks += (time.tv_nsec / 1000000);
+        return ticks;
+}
+
+void engine_run(Engine engine){ // TODO Add windows timing
         int quit = FALSE;
 
         engine_init(engine);
 
-        int lastTime = SDL_GetTicks();
+        u64 lastTime = get_ticks();
         int accumulator = 0;
 
         while(quit == FALSE){
-                int newTime = SDL_GetTicks();
-                int frameTime = newTime - lastTime;
+                net_update();
+
+                u64 newTime = get_ticks();
+                u64 frameTime = newTime - lastTime;
                 if(frameTime > 250)
                         frameTime = 250;
                 lastTime = newTime;
@@ -411,13 +427,12 @@ void engine_run(Engine engine){
                 accumulator += frameTime;
                 
                 while(accumulator >= PHYSICS_TARGET_TIME){
-                        input(&quit);   // TODO: Move input out of fixed time step but get the movement here;
-                        engine_fixed_update(engine);
+                        //input(&quit);   // TODO: Move input out of fixed time step but get the movement here;
+                        //engine_fixed_update(engine);
                         accumulator -= PHYSICS_TARGET_TIME;
                 }
-                engine_draw(engine);
+                //engine_draw(engine);
         }
         engine_quit();
 }
 
-**/

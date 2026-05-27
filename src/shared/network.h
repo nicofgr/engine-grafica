@@ -14,6 +14,7 @@ typedef uint32_t NetConn;
 // BOTH
 void net_init();
 void net_update();
+void net_shutdown();
 
 // SERVER
 NetSocket net_listen(u_int16_t port);

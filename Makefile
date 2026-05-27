@@ -1,3 +1,11 @@
+# Define color variables
+RED    := \033[0;31m
+GREEN  := \033[0;32m
+YELLOW := \033[0;33m
+BLUE   := \033[0;34m
+NC     := \033[0m
+CHECK  := $(GREEN)✔$(NC)
+
 CC  = clang
 CXX = clang++
 
@@ -6,7 +14,7 @@ CPPFLAGS = -I./include/ -I/usr/local/include -I./src/shared/ $(shell pkg-config 
 CFLAGS = -std=c99 -Wall -Wextra -MMD -MP -fsanitize=address
 CXXFLAGS = -std=c++11 -Wall -Wextra
 
-SERVER_LIBS = -lpthread -lm -L/usr/local/lib -lGameNetworkingSockets -lstdc++
+SERVER_LIBS = -lpthread -lm -L/usr/local/lib -lGameNetworkingSockets -lstdc++ -lrt
 CLIENT_LIBS = -lpthread -lm -L/usr/local/lib -lGameNetworkingSockets -lstdc++ -lSDL2 -lGL -lX11 -lXrandr -lXi -ldl  $(shell pkg-config --libs freetype2)
 
 SHARED_SRCS = $(wildcard src/shared/*.c)
@@ -42,11 +50,11 @@ all: $(SERVER_TARGET) $(CLIENT_TARGET)
 $(SERVER_TARGET): $(SERVER_OBJS)
 	@mkdir -p $(TARGET_DIR)
 	$(CC) $(CFLAGS) $(SERVER_OBJS) $(SERVER_LIBS) -o $@
-	@echo "✔ Server compiled successufully: $@"
+	@echo " $(CHECK) Server compiled successufully: $@"
 
 $(CLIENT_TARGET): $(CLIENT_OBJS)
 	$(CC) $(CFLAGS) $(CLIENT_OBJS) $(CLIENT_LIBS) -o $@
-	@echo "✔ Client compiled successufully: $@"
+	@echo " $(CHECK) Client compiled successufully: $@"
 
 # The Compilation Step (compiles each .c into a .o)
 obj/%.o: src/%.c

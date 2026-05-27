@@ -4,6 +4,7 @@
 #include "cglm/vec3.h"
 #include "../shared/types.h"
 #include "../shared/constants.h"
+#include "../shared/network.h"
 #include "renderer/renderer.h"
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>
@@ -355,6 +356,9 @@ void object_position_copy(u32 objectID, vec3d dest){
 }
 
 void engine_init(Engine engine) {
+        net_init();
+        NetConn connection = net_connect(8080);
+
         vec3d_zero(original_origin);
         video_init();
         renderer_init();
@@ -532,6 +536,7 @@ void distant_objects_point(){
 }
 
 void engine_quit(){
+        net_shutdown();
         SDL_GL_DeleteContext(glContext);
         SDL_DestroyWindow(glWindow);
         SDL_Quit();
@@ -548,6 +553,7 @@ void engine_run(Engine engine){
         int accumulator = 0;
 
         while(quit == FALSE){
+                net_update();
                 int newTime = SDL_GetTicks();
                 int frameTime = newTime - lastTime;
                 if(frameTime > 250)
