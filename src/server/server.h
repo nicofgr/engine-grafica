@@ -7,7 +7,6 @@
 typedef struct Engine{
         void (*init)();
         void (*update)();
-        void (*draw)();
 }Engine;
 
 void engine_run(Engine);

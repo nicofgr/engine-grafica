@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <cglm/cglm.h>
 
+typedef uint8_t   u8;
+typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 typedef double vec3d[3];
@@ -35,6 +37,12 @@ typedef struct String{
         char* string;
         u32   size;
 } String;
+
+typedef enum MeshID{
+        SPHERE,
+        TRIANGLE,
+        NUM_MESHES
+}MeshID;
 
 void Vec3Array_Push(Vec3_Array*, vec3);
 static inline void vec3d_copy(vec3d src, vec3d dest){

@@ -22,52 +22,24 @@ HSteamNetPollGroup m_hPollGroup;
 ISteamNetworkingSockets* m_pInterface;
 bool g_bQuit = false;
 
-// BOTH ==============================================================================
-
-static void DebugOutput( ESteamNetworkingSocketsDebugOutputType eType, const char *pszMsg ){
-	SteamNetworkingMicroseconds time = SteamNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
-	printf( "%10.6f %s\n", time*1e-6, pszMsg );
-	fflush(stdout);
-	if ( eType == k_ESteamNetworkingSocketsDebugOutputType_Bug ){
-		fflush(stdout);
-		fflush(stderr);
-		exit(1);
-	}
-}
-
-void net_init(){
-        SteamDatagramErrMsg errMsg;
-        if ( !GameNetworkingSockets_Init( nullptr, errMsg ) ){
-	        fprintf(stderr, "GameNetworkingSockets_Init failed.  %s\n", errMsg );
-                exit(0);
-        }
-        g_logTimeZero = SteamNetworkingUtils()->GetLocalTimestamp();
-        SteamNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput );
-}
-
-
-void ClientPollIncomingMessages();
-void net_update(){
-        if(role == CLIENT)
-                ClientPollIncomingMessages();
-
-        m_pInterface->RunCallbacks();
-}
-
-void net_send(){
-}
-
-void net_recv(){
-}
-
-void net_shutdown(){
-        GameNetworkingSockets_Kill();
-}
-
-
 // SERVER ==============================================================================
-HSteamNetConnection* client_array;
 
+typedef struct ClientArray{
+        HSteamNetConnection* array;
+        u32 size;
+}ClientArray;
+
+ClientArray client_array;
+
+static inline void client_array_push(HSteamNetConnection conn){
+        if(client_array.size == 0){
+                client_array.array = (HSteamNetConnection*)malloc(sizeof(HSteamNetConnection));
+        }else{
+                client_array.array = (HSteamNetConnection*)realloc(client_array.array, sizeof(HSteamNetConnection)*client_array.size+1);
+        }
+        client_array.array[client_array.size] = conn;
+        client_array.size++;
+}
 
 void SendStringToClient( HSteamNetConnection conn, const char *str ){
         m_pInterface->SendMessageToConnection( conn, str, (uint32)strlen(str), k_nSteamNetworkingSend_Reliable, nullptr );
@@ -190,6 +162,7 @@ void ServerOnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *
                         m_mapClients[ pInfo->m_hConn ];
                         SetClientNick( pInfo->m_hConn, nick );
                         **/
+                        client_array_push(pInfo->m_hConn);
                         break;
                 }
                 case k_ESteamNetworkingConnectionState_Connected:
@@ -343,3 +316,65 @@ NetConn net_connect(u_int16_t port){
         return m_hConnection;
 }
 
+// BOTH ==============================================================================
+
+static void DebugOutput( ESteamNetworkingSocketsDebugOutputType eType, const char *pszMsg ){
+	SteamNetworkingMicroseconds time = SteamNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
+	printf( "%10.6f %s\n", time*1e-6, pszMsg );
+	fflush(stdout);
+	if ( eType == k_ESteamNetworkingSocketsDebugOutputType_Bug ){
+		fflush(stdout);
+		fflush(stderr);
+		exit(1);
+	}
+}
+
+void net_init(){
+        SteamDatagramErrMsg errMsg;
+        if ( !GameNetworkingSockets_Init( nullptr, errMsg ) ){
+	        fprintf(stderr, "GameNetworkingSockets_Init failed.  %s\n", errMsg );
+                exit(0);
+        }
+        g_logTimeZero = SteamNetworkingUtils()->GetLocalTimestamp();
+        SteamNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput );
+
+        client_array.array = NULL;
+        client_array.size  = 0;
+}
+
+void net_update(){
+        if(role == CLIENT){
+                ClientPollIncomingMessages();
+        }
+
+        m_pInterface->RunCallbacks();
+}
+
+void net_send(Type type, u16 size, const void* buf){
+        if(role == CLIENT)
+                return;
+        if(client_array.size == 0)
+                return;
+
+        HSteamNetConnection conn;
+        conn = client_array.array[0];
+        PacketHeader header;
+        header.size = size;
+        header.type = type;
+
+        u32 total_size = sizeof(PacketHeader) + size;
+        u8  stack_buffer[total_size];
+
+        memcpy(stack_buffer, &header, sizeof(PacketHeader));
+        memcpy(stack_buffer + sizeof(PacketHeader), buf, size);
+        
+        printf("Package size: %d bytes\n", header.size);
+        m_pInterface->SendMessageToConnection(conn, stack_buffer, total_size, k_nSteamNetworkingSend_Reliable, nullptr);
+}
+
+void net_recv(){
+}
+
+void net_shutdown(){
+        GameNetworkingSockets_Kill();
+}

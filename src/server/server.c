@@ -59,12 +59,6 @@ Object* ObjectArray_Get(const u32 objectID){
         return &objectArray.array[objectID];
 }
 
-/**
-u32 create_material(Color_RGB ambient, Color_RGB diffuse, Color_RGB specular, float shininess, Color_RGB emission){
-        return renderer_create_material(ambient, diffuse, specular, shininess, emission);
-}
-**/
-
 u32 check_duplicate_model(u32 objectID){
         Object* object = ObjectArray_Get(objectID);
         for(int i = 0; i < objectArray.size; i++){
@@ -105,15 +99,13 @@ void change_material(u32 objectID, u32 materialID){
         renderer_change_material(object->modelID, materialID);
 }
 **/
-/**
 u32 create_sphere(vec3d position,  float radius){
-        u32  modelID  = renderer_get_sphere();
+        u32  modelID  = SPHERE;
         vec3 scale    = (vec3){radius, radius, radius};
         u32  objectID = ObjectArray_Push(modelID, position, scale);
 
         return objectID;
 }
-**/
 
 void move_object_local(u32 objectID, vec3d delta_pos){
         versor rotation;
@@ -356,13 +348,12 @@ void move_origin(vec3d newOrigin){
         renderer_update_light_position(newLightPos);
 
         camera_move_to_origin();
-}
-**/
+}**/
 
 float delta_time = 1.0/TARGET_PPS;
 float counter = 0;
-/**
 void engine_fixed_update(Engine engine){
+        /**
         // MOVE ORIGIN
         vec3 camPosf;
         camera_copy_position(camPosf);
@@ -388,10 +379,10 @@ void engine_fixed_update(Engine engine){
         engine.update();
 
         //update_patches();
+        **/
 
         counter += delta_time;
 }
-**/
 
 void engine_quit(){
         net_shutdown();
@@ -406,6 +397,13 @@ u64 get_ticks(){
         ticks += (time.tv_nsec / 1000000);
         return ticks;
 }
+
+void send_object(){
+        u16 size = sizeof(Object) * objectArray.size;
+        printf("Sending %d objects, %d bytes\n", objectArray.size, size);
+        net_send(OBJECT, size, objectArray.array);
+}
+
 
 void engine_run(Engine engine){ // TODO Add windows timing
         int quit = FALSE;
@@ -428,10 +426,10 @@ void engine_run(Engine engine){ // TODO Add windows timing
                 
                 while(accumulator >= PHYSICS_TARGET_TIME){
                         //input(&quit);   // TODO: Move input out of fixed time step but get the movement here;
-                        //engine_fixed_update(engine);
+                        engine_fixed_update(engine);
                         accumulator -= PHYSICS_TARGET_TIME;
                 }
-                //engine_draw(engine);
+                send_object();
         }
         engine_quit();
 }

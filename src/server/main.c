@@ -17,14 +17,15 @@ u32 pluto;
 u32** patchSphere = NULL;
 
 void init(){
-        /**
-        engine_camera_position_set((vec3d){149.6e6, 6371.9f, 0.0f});
-        engine_camera_position_set((vec3d){0.0f, 0.0f, 0.0f});
+        //engine_camera_position_set((vec3d){149.6e6, 6371.9f, 0.0f});
+        //engine_camera_position_set((vec3d){0.0f, 0.0f, 0.0f});
         //sun     = create_sphere((vec3d){0.0f, 0.0f, 0.0f},       695700.0f);
-        sun     = create_sphere((vec3d){0.0f, 0.0f, 0.0f},       1.0f);
+        sun     = create_sphere((vec3d){      0.0f, 0.0f, 0.0f},      1.0f);
         mercury = create_sphere((vec3d){    57.9e6, 0.0f, 0.0f},   2439.7f);
         venus   = create_sphere((vec3d){   108.0e6, 0.0f, 0.0f},   6051.8f);
         earth   = create_sphere((vec3d){   149.6e6, 0.0f, 0.0f},   6371.8f);
+
+        /**
         //patchSphere = create_patch_sphere((vec3d){0.0f, 0.0f, 0.0f}, 1.0f);
         patchSphere = create_patch_sphere();
         //versor rotation;
@@ -79,8 +80,7 @@ void draw(){
 
 Engine engine = {
                  .init = &init,
-                 .update = &update,
-                 .draw = &draw
+                 .update = &update
                 };
 
 int main(int argc, char** argv) {
