@@ -1,7 +1,10 @@
+// Make it work like a standalone library,
+// with no dependencies on the engine,
+// just as a translator from cpp to c.
+//
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include "types.h"
 #include <stdint.h>
 #include <sys/types.h>
 #ifdef __cplusplus
@@ -13,15 +16,10 @@ typedef uint32_t NetConn;
 
 #pragma pack(push,1) // TLV Type-Length-Value
 
-typedef enum Type{
-        INPUT,
-        POSITION_UPDATE,
-        OBJECT
-}Type;
 
 typedef struct PacketHeader{
-        u16 type;
-        u16 size;
+        uint8_t   type; // Max 256 types
+        uint16_t  size; // Max 65536 bytes
 }PacketHeader;
 
 #pragma pack(pop)
@@ -30,7 +28,7 @@ typedef struct PacketHeader{
 void net_init();
 void net_update();
 void net_shutdown();
-void net_send(Type type, u16 size, const void* buf);
+//void net_send(HSteamNetConnection conn, Type type, u16 size, const void* buf);
 void net_recv();
 
 // SERVER

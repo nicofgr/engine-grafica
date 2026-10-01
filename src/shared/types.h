@@ -10,6 +10,29 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 typedef double vec3d[3];
 
+// THESE STRUCTS ARE USED BY BOTH CLIENT AND SERVER
+// They're declared here to maintain consistence between both
+//
+typedef enum Type{
+        INPUT,
+        POSITION_UPDATE,
+        OBJECT,
+        STRING
+}Type;
+
+typedef struct Object{   // Model, Position, Rotation, Scale
+        u32    modelID;
+        vec3d  position; // Relative to whatever origin ( NOT GLOBAL POSITION AND NOT RELATIVE TO CAMERA )
+        versor rotation;
+        vec3   scale;
+}Object;
+
+typedef struct ObjectArray{
+        Object* array;
+        u32     size;
+}ObjectArray;
+
+
 typedef struct Vec3_Array{
         vec3* array;
         u32   size;

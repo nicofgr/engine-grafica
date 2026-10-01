@@ -12,7 +12,7 @@
 #include <cglm/cglm.h>
 #include <glad/glad.h>
 
-u32 is_post_processing = GL_FALSE;
+u32 is_post_processing = GL_TRUE;
 
 GLuint shaderProgram;
 GLuint textShader;
@@ -158,6 +158,8 @@ static GLint h_post_camera_up;
 static GLint h_post_sphere_center;
 static GLint h_post_depth_texture;
 static GLint h_post_light_position;
+static GLint h_post_circle_positions;
+static GLint h_post_num_circles;
 
 static void post_processing_setup(){
         // Creating frame buffer
@@ -226,6 +228,8 @@ static void post_processing_setup(){
         h_post_sphere_center = glGetUniformLocation(post_shader, "u_planet_center"); 
         h_post_depth_texture = glGetUniformLocation(post_shader, "u_depth_texture"); 
         h_post_light_position = glGetUniformLocation(post_shader, "u_light_position"); 
+        h_post_num_circles   = glGetUniformLocation(post_shader, "u_num_circles");
+        h_post_circle_positions = glGetUniformLocation(post_shader, "u_circle_positions");
 
         GLuint h_fCoef = glGetUniformLocation(post_shader, "f_coef");
         glUniform1f(h_fCoef, 2.0/log2(frustrumFar + 1.0));
@@ -234,6 +238,7 @@ static void post_processing_setup(){
         glUniform1f(h_frustrum_far, frustrumFar);
 
         glUniform3f(h_post_light_position, 0.0f, 0.0f, 0.0f);
+
 }
 
 static void setup_shaders(){
@@ -730,3 +735,16 @@ void render_text(const char* text, float x, float y, const float scale, const Co
         glBindTexture(GL_TEXTURE_2D,0);
 }
 
+GLfloat circleData[100] = {
+        2.0f, 3.0f,
+        8.0f, 7.0f,
+        6.0f, 2.0f
+};
+
+void renderer_draw_circle(int id, float x, float y){
+        // TODO Move this stuff to its own shader maybe?
+        circleData[id*2] = x;
+        circleData[id*2 + 1] = y;
+        glUniform1i(h_post_num_circles, 23);
+        glUniform2fv(h_post_circle_positions, 50, circleData);
+}

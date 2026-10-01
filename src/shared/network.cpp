@@ -22,6 +22,7 @@ HSteamNetPollGroup m_hPollGroup;
 ISteamNetworkingSockets* m_pInterface;
 bool g_bQuit = false;
 
+void net_send(HSteamNetConnection conn, Type type, u16 size, const void* buf);
 // SERVER ==============================================================================
 
 typedef struct ClientArray{
@@ -133,16 +134,13 @@ void ServerOnConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t *
                                 break;
                         }
 
-                        // Generate a random nick.
-                        // You would want them to have some sort of signon message,
-                        // and you would keep their client in a state of limbo (connected,
-                        // but not logged on) until them.
-                        char nick[ 64 ];
-                        sprintf( nick, "BraveWarrior%d", 10000 + ( rand() % 100000 ) );
-
                         // Send them a welcome message
-                        sprintf( temp, "Welcome, stranger.  Thou art known to us for now as '%s'; upon thine command '/nick' we shall know thee otherwise.", nick ); 
+                        sprintf( temp, "If you are reading this, you have connected successfully!!"); 
                         SendStringToClient( pInfo->m_hConn, temp ); 
+
+                        //u16 size = sizeof(Object) * objectArray.size;
+                        //printf("Sending %d objects, %d bytes\n", objectArray.size, size);
+                        //net_send(pInfo->m_hConn, OBJECT, size, objectArray.array);
 
                         // Also send them a list of everybody who is already connected
                         /**
@@ -228,7 +226,13 @@ void ClientPollIncomingMessages(){
                         fprintf(stderr, "Error checking for messages\n" );
                         exit(0);
                 }
-
+                puts("Message received:");
+                PacketHeader recvHeader;
+                memcpy(&recvHeader, pIncomingMsg->m_pData, sizeof(recvHeader));
+                printf("Message type: %d\n", recvHeader.type);
+                printf("Message size: %d bytes\n", recvHeader.size);
+                int objectCount = recvHeader.size / (float) sizeof(Object);
+                printf("Total: %d objects\n", objectCount);
                 // Just echo anything we get from the server
                 fwrite( pIncomingMsg->m_pData, 1, pIncomingMsg->m_cbSize, stdout );
                 fputc( '\n', stdout );
@@ -350,14 +354,10 @@ void net_update(){
         m_pInterface->RunCallbacks();
 }
 
-void net_send(Type type, u16 size, const void* buf){
+void net_send(HSteamNetConnection conn, Type type, u16 size, const void* buf){
         if(role == CLIENT)
                 return;
-        if(client_array.size == 0)
-                return;
 
-        HSteamNetConnection conn;
-        conn = client_array.array[0];
         PacketHeader header;
         header.size = size;
         header.type = type;

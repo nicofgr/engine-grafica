@@ -39,4 +39,7 @@ void renderer_change_material(u32 modelID, u32 materialID);
 // Lights
 void renderer_update_light_position(vec3 position);
 
+
+//OTHER
+void renderer_draw_circle(int id, float x, float y);
 #endif

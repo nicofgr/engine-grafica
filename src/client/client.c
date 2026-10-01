@@ -21,18 +21,6 @@ vec3d original_origin;
 float speed = 10.0;
 vec3d camera_global_pos;
 
-typedef struct Object{   // Model, Position, Rotation, Scale
-        u32    modelID;
-        vec3d  position; // Relative to whatever origin ( NOT GLOBAL POSITION AND NOT RELATIVE TO CAMERA )
-        versor rotation;
-        vec3   scale;
-}Object;
-
-typedef struct ObjectArray{
-        Object* array;
-        u32     size;
-}ObjectArray;
-
 ObjectArray objectArray;
 
 u32 ObjectArray_Push(const u32 modelID, vec3d position, const vec3 scale){
@@ -444,7 +432,7 @@ void move_origin(vec3d newOrigin){
 }
 
 float delta_time = 1.0/TARGET_PPS;
-float counter = 0;
+float counter = 0; // Increase every physics update (by how much time has passed)
 void engine_fixed_update(Engine engine){
         // MOVE ORIGIN
         vec3 camPosf;
@@ -519,9 +507,14 @@ void engine_draw(Engine engine){
         snprintf(buffer, 128, "ctr: %.2f", counter);
         render_text(buffer, 0.7f, 0.76f, 0.35f, color.orange);
 
+
         SDL_GL_SwapWindow(glWindow);
 
         renderer_draw_finish();
+}
+
+void engine_draw_circle(int id, float x, float y){
+        renderer_draw_circle(id, x, y);
 }
 
 void draw_point(vec3 position, Color_RGB color, float size){
@@ -542,6 +535,12 @@ void engine_quit(){
         SDL_Quit();
         free(objectArray.array);
         renderer_quit();
+}
+
+float interpolator = 0;
+
+float get_interpolator(){
+        return interpolator;
 }
 
 void engine_run(Engine engine){
@@ -567,6 +566,8 @@ void engine_run(Engine engine){
                         engine_fixed_update(engine);
                         accumulator -= PHYSICS_TARGET_TIME;
                 }
+                interpolator = (float)accumulator/PHYSICS_TARGET_TIME;
+                //printf("Interpolator: %f\n", interpolator);
                 engine_draw(engine);
         }
         engine_quit();

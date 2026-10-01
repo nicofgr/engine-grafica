@@ -38,5 +38,8 @@ void engine_camera_position_set(vec3d position);
 extern float delta_time;
 extern int last_frame_time;
 
+void engine_draw_circle(int id, float x, float y);
+float get_interpolator();
+
 #endif
 
