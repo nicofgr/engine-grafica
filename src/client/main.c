@@ -31,10 +31,21 @@ typedef struct Particle{
         float vely;
 }Particle;
 
+struct Bee{
+        float x;
+        float y;
+        float lastx;
+        float lasty;
+};
+
 // PROTOTYPES
 int PSO_init(Particle** pArray);
 int PSO_update(Particle* pArray);
 int PSO_draw(Particle* pArray);
+
+int ABC_init();
+int ABC_update();
+int ABC_draw();
 
 // GLOBALS
 Particle* pArray;

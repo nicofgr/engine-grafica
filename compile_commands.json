@@ -1,0 +1,295 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/server/main.o",
+      "src/server/main.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/server/main.c",
+    "output": "/home/nico/repos_local/engine/obj/server/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/server/server.o",
+      "src/server/server.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/server/server.c",
+    "output": "/home/nico/repos_local/engine/obj/server/server.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/shared/constants.o",
+      "src/shared/constants.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/shared/constants.c",
+    "output": "/home/nico/repos_local/engine/obj/shared/constants.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/shared/types.o",
+      "src/shared/types.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/shared/types.c",
+    "output": "/home/nico/repos_local/engine/obj/shared/types.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c++11",
+      "-Wall",
+      "-Wextra",
+      "-c",
+      "-o",
+      "obj/shared/network.o",
+      "src/shared/network.cpp"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/shared/network.cpp",
+    "output": "/home/nico/repos_local/engine/obj/shared/network.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/client.o",
+      "src/client/client.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/client.c",
+    "output": "/home/nico/repos_local/engine/obj/client/client.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/glad.o",
+      "src/client/glad.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/glad.c",
+    "output": "/home/nico/repos_local/engine/obj/client/glad.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/main.o",
+      "src/client/main.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/main.c",
+    "output": "/home/nico/repos_local/engine/obj/client/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/mesh.o",
+      "src/client/mesh.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/mesh.c",
+    "output": "/home/nico/repos_local/engine/obj/client/mesh.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/renderer/gui.o",
+      "src/client/renderer/gui.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/renderer/gui.c",
+    "output": "/home/nico/repos_local/engine/obj/client/renderer/gui.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/renderer/model.o",
+      "src/client/renderer/model.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/renderer/model.c",
+    "output": "/home/nico/repos_local/engine/obj/client/renderer/model.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/renderer/renderer.o",
+      "src/client/renderer/renderer.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/renderer/renderer.c",
+    "output": "/home/nico/repos_local/engine/obj/client/renderer/renderer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/renderer/shader.o",
+      "src/client/renderer/shader.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/renderer/shader.c",
+    "output": "/home/nico/repos_local/engine/obj/client/renderer/shader.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-I./include/",
+      "-I/usr/local/include",
+      "-I./src/shared/",
+      "-I/usr/include/freetype2",
+      "-I/usr/include/libpng16",
+      "-std=c99",
+      "-Wall",
+      "-Wextra",
+      "-fsanitize=address",
+      "-c",
+      "-o",
+      "obj/client/renderer/text.o",
+      "src/client/renderer/text.c"
+    ],
+    "directory": "/home/nico/repos_local/engine",
+    "file": "/home/nico/repos_local/engine/src/client/renderer/text.c",
+    "output": "/home/nico/repos_local/engine/obj/client/renderer/text.o"
+  }
+]
