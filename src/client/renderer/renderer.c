@@ -351,7 +351,7 @@ void renderer_draw(){
         if(is_post_processing == TRUE){
                 glBindFramebuffer(GL_FRAMEBUFFER, FBO);
         }
-        glClearColor(0.0, 0.0, 0.05, 1.0);
+        //glClearColor(0.0, 0.0, 0.05, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -573,7 +573,7 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, versor rotati
         // IF CLOSE DO THIS
         glUseProgram(shaderProgram);
 
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // ON TO SEE LINES
 
         // MODEL MATRIX
         mat4 mesh;
@@ -611,7 +611,7 @@ void renderer_draw_model(const u32 modelID, vec3d position_double, versor rotati
         glDrawElements(GL_TRIANGLES, vao.nFaces, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 
@@ -670,7 +670,8 @@ static u32 renderer_create_model(Mesh mesh, u32 materialID){ // TODO Change to a
 
 u32 renderer_create_sphere(){
         Mesh sphere = {.faces = {0}, .vertices = {NULL}};
-        mesh_create_sphere(&sphere,0);
+        int subdivision_level = 5;
+        mesh_create_sphere(&sphere, subdivision_level);
         u32 modelID = renderer_create_model(sphere, 0);
         mesh_free(&sphere); 
         return modelID;

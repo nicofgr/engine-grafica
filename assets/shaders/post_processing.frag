@@ -134,40 +134,6 @@ void main(){
         }
         FragColor = original_color;
 
-        // CIRCLE STUFF
-        // HeightMap
-        vec2 new = (uv+1)*5;
-        float height = sqrt(pow((new.x - 2),2) + pow((new.y-3),2)) +sqrt(pow((new.x - 8),2) + pow((new.y-7),2)) +sqrt(pow((new.x - 6),2) + pow((new.y-2),2));
-        height = (height - 9.33)/6;
-        //height = pow(log(height-8.33),0.6)*0.6;
-        //height = height - mod(height,0.01);
-        FragColor = vec4(1.0);
-        height = mod(height,0.1);
-        if(height > 0.045 && height < 0.055){
-                FragColor = vec4(vec3(0.85),1.0);
-        }
-        // Three original circles
-        for(int i = 0; i < 3; i++){
-                vec2 norm_position = u_circle_positions[i]/5 - 1;
-                float circleRadius = distance(norm_position, uv);
-                if(circleRadius < 0.01){
-                        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-                }
-        }
-        for(int i = 3; i < u_num_circles; i++){
-                vec2 norm_position = u_circle_positions[i]/5 - 1;
-                float circleRadius = distance(norm_position, uv);
-                if(circleRadius < 0.01){
-                        FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-                }
-        }
-        vec2 norm_position = u_circle_positions[u_num_circles]/5 - 1;
-        float circleRadius = distance(norm_position, uv);
-        if(circleRadius < 0.01){
-                FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-        }
-
-
         //FragColor = vec4(uv, 0, 1);
         //original_color = vec4(vec3( linear_depth(texture(u_depth_texture, TexCoords).r))/frustrum_far  ,1.0); // depth
         //FragColor = vec4(vec3(1 - tx),1.0); // Invert colors

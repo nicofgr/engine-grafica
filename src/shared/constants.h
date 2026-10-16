@@ -13,7 +13,7 @@
 #define TARGET_FPS 1000
 #define FRAME_TARGET_TIME (1000.0/TARGET_FPS)
 
-#define TARGET_PPS 1 // Def: 60
+#define TARGET_PPS 60 // Def: 60
 #define PHYSICS_TARGET_TIME (1000.0/TARGET_PPS)
 
 #define FOV 70

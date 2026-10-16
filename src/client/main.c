@@ -51,9 +51,8 @@ int ABC_draw();
 Particle* pArray;
 
 void init(){
-        /**
         engine_camera_position_set((vec3d){149.6e6, 6371.9f, 0.0f});
-        engine_camera_position_set((vec3d){0.0f, 0.0f, 0.0f});
+        //engine_camera_position_set((vec3d){0.0f, 0.0f, 0.0f});
         //sun     = create_sphere((vec3d){0.0f, 0.0f, 0.0f},       695700.0f);
         sun     = create_sphere((vec3d){0.0f, 0.0f, 0.0f},       1.0f);
         mercury = create_sphere((vec3d){    57.9e6, 0.0f, 0.0f},   2439.7f);
@@ -73,8 +72,7 @@ void init(){
 
         u32 glowingMat = create_material(color.star, color.star, color.star, 32, (Color_RGB){50.0, 50.0, 50.0});
         change_material(sun, glowingMat);
-        **/
-        PSO_init(&pArray);
+        //PSO_init(&pArray);
 }
 
 void update(){
@@ -93,11 +91,10 @@ void update(){
         glm_normalize(up);
         //camera_change_up(up);
         **/
-        PSO_update(pArray);
+        //PSO_update(pArray);
 }
 
 void draw(){
-        /**
         draw_object(sun);
         draw_object(mercury);
         draw_object(venus);
@@ -109,8 +106,7 @@ void draw(){
         draw_object(uranus);
         draw_object(neptune);
         draw_object(pluto);
-        **/
-        PSO_draw(pArray);
+        //PSO_draw(pArray);
 }
 
 Engine engine = {
